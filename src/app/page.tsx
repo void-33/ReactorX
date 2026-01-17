@@ -48,6 +48,14 @@ export default function ChemSimLabPage() {
     };
     setLabItems((prev) => [...prev, newItem]);
   };
+
+  const removeLabItem = (itemId: string) => {
+    setLabItems((prev) => prev.filter(item => item.id !== itemId));
+    if (selectedItemId === itemId) {
+      setSelectedItemId(null);
+    }
+    setLastInteractionToast({ title: "Item Removed", description: "Equipment removed from workbench."});
+  };
   
   const addReagentToItem = (itemId: string, reagent: Reagent, volume: number, concentration: number) => {
     setLabItems(prevItems => prevItems.map(item => {
@@ -252,6 +260,7 @@ export default function ChemSimLabPage() {
               items={labItems}
               onDragEnd={handleDragEnd}
               onItemClick={handleItemClick}
+              onRemoveItem={removeLabItem}
               itemRefs={itemRefs}
             />
         </div>
@@ -263,6 +272,7 @@ export default function ChemSimLabPage() {
             items={labItems}
             selectedItem={labItems.find(item => item.id === selectedItemId) || null}
             onAddReagent={addReagentToItem}
+            onRemoveItem={removeLabItem}
             onGetGuidance={handleGetGuidance}
             onAnalyzeCompletion={handleAnalyzeCompletion}
             aiGuidance={aiGuidance}
