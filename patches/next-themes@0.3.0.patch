@@ -1,0 +1,435 @@
+diff --git a/node_modules/next-themes/dist/index.js b/node_modules/next-themes/dist/index.js
+index 7a26f63..c268f7f 100644
+--- a/node_modules/next-themes/dist/index.js
++++ b/node_modules/next-themes/dist/index.js
+@@ -1,9 +1,10 @@
+ 'use client';
+ "use strict";
+ var __create = Object.create;
+-var __defProp = Object.defineProperty;
++var __defProp = Object.defineProperty, __defProps = Object.defineProperties;
+ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+ var __getOwnPropNames = Object.getOwnPropertyNames;
++var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+ var __getProtoOf = Object.getPrototypeOf;
+ var __hasOwnProp = Object.prototype.hasOwnProperty;
+ var __export = (target, all) => {
+@@ -11,10 +12,12 @@
+     __defProp(target, key, { get: all[key], enumerable: true });
+ };
+ var __copyProps = (to, from, except, desc) => {
+-  if (from && typeof from === "object" || typeof from === "function") {
+-    for (let key of __getOwnPropNames(from))
+-      if (!__hasOwnProp.call(to, key) && key !== except)
+-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
++  if (from && typeof from == "object" || typeof from == "function") {
++    for (let key of __getOwnPropNames(from)) {
++      if (!__hasOwnProp.call(to, key) && key !== except)
++        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
++    }
+   }
++  if (from && typeof from == "object" && __getOwnPropSymbols)
++    for (let key of __getOwnPropSymbols(from))
++      if (!__hasOwnProp.call(to, key) && key !== except && Object.prototype.propertyIsEnumerable.call(from, key))
++        __defProp(to, key, { get: () => from[key] });
+   return to;
+ };
+ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+@@ -29,13 +32,15 @@
+ // src/index.tsx
+ var src_exports = {};
+ __export(src_exports, {
+-  ThemeProvider: () => ThemeProvider,
+-  useTheme: () => useTheme
++  ThemeProvider: () => ThemeProvider,
++  useTheme: () => useTheme
+ });
+ module.exports = __toCommonJS(src_exports);
+ var React = __toESM(require("react"));
+-var import_react = require("react");
+-var ThemeContext = (0, import_react.createContext)(void 0);
++var import_react = __toESM(require("react"));
++var import_react_dom = require("react-dom");
++var React2 = __toESM(require("react"), 1);
++var ThemeContext = (0, import_react.createContext)(void 0);
+ var defaultContext = { setTheme: (_) => {
+ }, themes: [] };
+ var useTheme = () => (0, import_react.useContext)(ThemeContext) ?? defaultContext;
+@@ -43,7 +48,7 @@
+   storageKey = "theme",
+   themes = ["light", "dark"],
+   defaultTheme = "system",
+-  attribute = "data-theme",
++  attribute = "data-theme",
+   value,
+   children,
+   nonce
+@@ -62,17 +67,17 @@
+   const [theme, setThemeState] = (0, import_react.useState)(() => getTheme(storageKey, defaultTheme));
+   const [resolvedTheme, setResolvedTheme] = (0, import_react.useState)(() => getTheme(storageKey));
+   const attrs = !value ? themes : Object.values(value);
+-  const applyTheme = (0, import_react.useCallback)((theme2) => {
++  const applyTheme = (0, import_react.useCallback)((theme2) => {
+     let resolved = theme2;
+     if (theme2 === "system") {
+       resolved = getSystemTheme(media);
+     }
+     const d = document.documentElement;
+     if (attribute === "class") {
+-      d.classList.remove(...attrs);
++      d.classList.remove(...attrs.filter(Boolean));
+       if (resolved)
+         d.classList.add(resolved);
+-    } else {
++    } else
+       if (resolved) {
+         d.setAttribute(attribute, resolved);
+       } else {
+@@ -82,23 +87,27 @@
+     if (resolved)
+       setResolvedTheme(resolved);
+   }, [attribute, attrs, value, media]);
+-  const setTheme = (0, import_react.useCallback)(
++  const setTheme = (0, import_react.useCallback)(
+     (theme2) => {
+       setThemeState(theme2);
+       try {
+         localStorage.setItem(storageKey, theme2);
+-      } catch (e) {
+-      }
++      } catch (e) {
++      }
+     },
+-    [storageKey]
++    [storageKey, value]
+   );
+   const handleMediaQuery = (0, import_react.useCallback)(
+-    (e) => {
+-      const resolved = getSystemTheme(e);
++    (e) => {
++      const newResolved = getSystemTheme(e);
++      setResolvedTheme(newResolved);
+       if (theme === "system")
+-        applyTheme("system");
++        applyTheme(newResolved);
+     },
+-    [theme, applyTheme]
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++    [
++      theme
++    ]
+   );
+   (0, import_react.useEffect)(() => {
+     const handler = (...args) => {
+@@ -107,38 +116,49 @@
+       if (e.key !== storageKey) {
+         return;
+       }
+-      const newValue = e.newValue;
++      const newValue = e.newValue || defaultTheme;
+       if (newValue && themes.includes(newValue)) {
+-        setTheme(newValue);
++        setThemeState(newValue);
+       }
+     };
+-    window.addEventListener("storage", handler);
+-    return () => window.removeEventListener("storage", handler);
++    if (enableSystem) {
++      window.addEventListener("storage", handler);
++      return () => window.removeEventListener("storage", handler);
++    }
+   }, [storageKey, themes, enableSystem, setTheme, defaultTheme]);
+   (0, import_react.useEffect)(() => {
++    if (!enableSystem)
++      return;
+     const media2 = window.matchMedia(systemTheme);
+     media2.addEventListener("change", handleMediaQuery);
+     handleMediaQuery(media2);
+     return () => media2.removeEventListener("change", handleMediaQuery);
+   }, [handleMediaQuery, enableSystem]);
+   (0, import_react.useEffect)(() => {
+-    applyTheme(theme);
+-  }, [theme, applyTheme]);
+-  const providerValue = (0, import_react.useMemo)(
+-    () => ({
+-      theme,
+-      setTheme,
+-      forcedTheme,
+-      resolvedTheme: theme === "system" ? resolvedTheme : theme,
+-      themes: enableSystem ? [...themes, "system"] : themes,
+-      systemTheme: enableSystem ? resolvedTheme : void 0
+-    }),
+-    [theme, setTheme, forcedTheme, resolvedTheme, themes, enableSystem]
+-  );
+-  return /* @__PURE__ */ React.createElement(ThemeContext.Provider, { value: providerValue }, /* @__PURE__ */ React.createElement(ThemeScript, { forcedTheme, storageKey, themes, defaultTheme, attribute, value, enableSystem, enableColorScheme, nonce }), children);
++    const handle = () => {
++      applyTheme(forcedTheme ?? theme);
++    };
++    if (forcedTheme) {
++      (0, import_react_dom.flushSync)(() => {
++        handle();
++      });
++    } else {
++      handle();
++    }
++  }, [theme, forcedTheme, applyTheme]);
++  const providerValue = (0, import_react.useMemo)(() => {
++    const contextValue = {
++      theme: forcedTheme ?? theme,
++      setTheme,
++      forcedTheme,
++      resolvedTheme: forcedTheme ?? (theme === "system" ? resolvedTheme : theme),
++      themes: enableSystem && !forcedTheme ? [...themes, "system"] : themes,
++      systemTheme: enableSystem && !forcedTheme ? resolvedTheme : void 0
++    };
++    return contextValue;
++  }, [theme, setTheme, forcedTheme, resolvedTheme, themes, enableSystem]);
++  return /* @__PURE__ */ React.createElement(ThemeContext.Provider, { value: providerValue }, /* @__PURE__ */ React.createElement(ThemeScript, { forcedTheme, storageKey, themes, defaultTheme, attribute, value, enableSystem, enableColorScheme, nonce }), children);
+ };
+ var ThemeScript = (0, import_react.memo)(
+   ({
+@@ -155,7 +175,7 @@
+     nonce
+   }) => {
+     const attrs = !value ? themes : Object.values(value);
+-    const defaultSystem = defaultTheme === "system";
++    const defaultSystem = defaultTheme === "system";
+     const optimization = (() => {
+       if (attribute === "class") {
+         const removeClasses = `d.remove(${attrs.map((t) => `'${t}'`).join(",")})`;
+@@ -176,14 +196,14 @@
+       disableTransitionOnChange,
+       forcedTheme
+     ]);
+-    return /* @__PURE__ */ React.createElement(
+-      "script",
++    return /* @__PURE__ */ React2.createElement(
++      "script",
+       {
+         nonce,
+         dangerouslySetInnerHTML: {
+           __html: `!${script.toString()
+-            .replace(/\\/g, "\\\\")
+-            .replace(/'/g, "\\'")}()`
++            .replace(/\\/g, "\\\\")
++            .replace(/'/g, "\\'")}()`
+         }
+       }
+     );
+diff --git a/node_modules/next-themes/dist/index.mjs b/node_modules/next-themes/dist/index.mjs
+index 92c8152..d4de750 100644
+--- a/node_modules/next-themes/dist/index.mjs
++++ b/node_modules/next-themes/dist/index.mjs
+@@ -1,7 +1,9 @@
+ 'use client';
+ // src/index.tsx
+-import React, { createContext, useContext, useCallback, useEffect, useMemo, useState, memo } from "react";
+-var ThemeContext = createContext(void 0);
++import React, { createContext, useContext, useCallback, useEffect, useMemo, useState, memo } from "react";
++import { flushSync } from "react-dom";
++import React2 from "react";
++var ThemeContext = createContext(void 0);
+ var defaultContext = { setTheme: (_) => {
+ }, themes: [] };
+ var useTheme = () => useContext(ThemeContext) ?? defaultContext;
+@@ -9,7 +11,7 @@
+   storageKey = "theme",
+   themes = ["light", "dark"],
+   defaultTheme = "system",
+-  attribute = "data-theme",
++  attribute = "data-theme",
+   value,
+   children,
+   nonce
+@@ -28,17 +30,17 @@
+   const [theme, setThemeState] = useState(() => getTheme(storageKey, defaultTheme));
+   const [resolvedTheme, setResolvedTheme] = useState(() => getTheme(storageKey));
+   const attrs = !value ? themes : Object.values(value);
+-  const applyTheme = useCallback((theme2) => {
++  const applyTheme = useCallback((theme2) => {
+     let resolved = theme2;
+     if (theme2 === "system") {
+       resolved = getSystemTheme(media);
+     }
+     const d = document.documentElement;
+     if (attribute === "class") {
+-      d.classList.remove(...attrs);
++      d.classList.remove(...attrs.filter(Boolean));
+       if (resolved)
+         d.classList.add(resolved);
+-    } else {
++    } else
+       if (resolved) {
+         d.setAttribute(attribute, resolved);
+       } else {
+@@ -48,23 +50,27 @@
+     if (resolved)
+       setResolvedTheme(resolved);
+   }, [attribute, attrs, value, media]);
+-  const setTheme = useCallback(
++  const setTheme = useCallback(
+     (theme2) => {
+       setThemeState(theme2);
+       try {
+         localStorage.setItem(storageKey, theme2);
+-      } catch (e) {
+-      }
++      } catch (e) {
++      }
+     },
+-    [storageKey]
++    [storageKey, value]
+   );
+   const handleMediaQuery = useCallback(
+     (e) => {
+-      const resolved = getSystemTheme(e);
++      const newResolved = getSystemTheme(e);
++      setResolvedTheme(newResolved);
+       if (theme === "system")
+-        applyTheme("system");
++        applyTheme(newResolved);
+     },
+-    [theme, applyTheme]
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++    [
++      theme
++    ]
+   );
+   useEffect(() => {
+     const handler = (...args) => {
+@@ -73,38 +79,49 @@
+       if (e.key !== storageKey) {
+         return;
+       }
+-      const newValue = e.newValue;
++      const newValue = e.newValue || defaultTheme;
+       if (newValue && themes.includes(newValue)) {
+-        setTheme(newValue);
++        setThemeState(newValue);
+       }
+     };
+-    window.addEventListener("storage", handler);
+-    return () => window.removeEventListener("storage", handler);
++    if (enableSystem) {
++      window.addEventListener("storage", handler);
++      return () => window.removeEventListener("storage", handler);
++    }
+   }, [storageKey, themes, enableSystem, setTheme, defaultTheme]);
+   useEffect(() => {
++    if (!enableSystem)
++      return;
+     const media2 = window.matchMedia(systemTheme);
+     media2.addEventListener("change", handleMediaQuery);
+     handleMediaQuery(media2);
+     return () => media2.removeEventListener("change", handleMediaQuery);
+   }, [handleMediaQuery, enableSystem]);
+   useEffect(() => {
+-    applyTheme(theme);
+-  }, [theme, applyTheme]);
+-  const providerValue = useMemo(
+-    () => ({
+-      theme,
+-      setTheme,
+-      forcedTheme,
+-      resolvedTheme: theme === "system" ? resolvedTheme : theme,
+-      themes: enableSystem ? [...themes, "system"] : themes,
+-      systemTheme: enableSystem ? resolvedTheme : void 0
+-    }),
+-    [theme, setTheme, forcedTheme, resolvedTheme, themes, enableSystem]
+-  );
+-  return /* @__PURE__ */ React.createElement(ThemeContext.Provider, { value: providerValue }, /* @__PURE__ */ React.createElement(ThemeScript, { forcedTheme, storageKey, themes, defaultTheme, attribute, value, enableSystem, enableColorScheme, nonce }), children);
++    const handle = () => {
++      applyTheme(forcedTheme ?? theme);
++    };
++    if (forcedTheme) {
++      flushSync(() => {
++        handle();
++      });
++    } else {
++      handle();
++    }
++  }, [theme, forcedTheme, applyTheme]);
++  const providerValue = useMemo(() => {
++    const contextValue = {
++      theme: forcedTheme ?? theme,
++      setTheme,
++      forcedTheme,
++      resolvedTheme: forcedTheme ?? (theme === "system" ? resolvedTheme : theme),
++      themes: enableSystem && !forcedTheme ? [...themes, "system"] : themes,
++      systemTheme: enableSystem && !forcedTheme ? resolvedTheme : void 0
++    };
++    return contextValue;
++  }, [theme, setTheme, forcedTheme, resolvedTheme, themes, enableSystem]);
++  return /* @__PURE__ */ React.createElement(ThemeContext.Provider, { value: providerValue }, /* @__PURE__ */ React.createElement(ThemeScript, { forcedTheme, storageKey, themes, defaultTheme, attribute, value, enableSystem, enableColorScheme, nonce }), children);
+ };
+ var ThemeScript = memo(
+   ({
+@@ -121,7 +138,7 @@
+     nonce
+   }) => {
+     const attrs = !value ? themes : Object.values(value);
+-    const defaultSystem = defaultTheme === "system";
++    const defaultSystem = defaultTheme === "system";
+     const optimization = (() => {
+       if (attribute === "class") {
+         const removeClasses = `d.remove(${attrs.map((t) => `'${t}'`).join(",")})`;
+@@ -142,14 +159,14 @@
+       disableTransitionOnChange,
+       forcedTheme
+     ]);
+-    return /* @__PURE__ */ React.createElement(
+-      "script",
++    return /* @__PURE__ */ React2.createElement(
++      "script",
+       {
+         nonce,
+         dangerouslySetInnerHTML: {
+           __html: `!${script.toString()
+-            .replace(/\\/g, "\\\\")
+-            .replace(/'/g, "\\'")}()`
++            .replace(/\\/g, "\\\\")
++            .replace(/'/g, "\\'")}()`
+         }
+       }
+     );
+diff --git a/node_modules/next-themes/package.json b/node_modules/next-themes/package.json
+index 6a541dd..81c5d9e 100644
+--- a/node_modules/next-themes/package.json
++++ b/node_modules/next-themes/package.json
+@@ -35,7 +35,7 @@
+     "access": "public"
+   },
+   "peerDependencies": {
+-    "react": "^16.8 || ^17 || ^18"
++    "react": "^16.8 || ^17 || ^18 || ^19"
+   },
+   "peerDependenciesMeta": {
+     "react-dom": {
+diff --git a/node_modules/next-themes/dist/types.d.ts b/node_modules/next-themes/dist/types.d.ts
+index c6b9f36..d41ae64 100644
+--- a/node_modules/next-themes/dist/types.d.ts
++++ b/node_modules/next-themes/dist/types.d.ts
+@@ -1,4 +1,4 @@
+-import * as React from 'react';
++import React from 'react';
+ 
+ export declare const useTheme: () => UseThemeProps;
+ export interface ThemeProviderProps {
+@@ -31,7 +31,7 @@
+     children: React.ReactNode;
+     nonce?: string;
+ }
+-export declare const ThemeProvider: React.FC<ThemeProviderProps>;
++export declare const ThemeProvider: (props: ThemeProviderProps) => React.ReactElement<any, string | React.JSXElementConstructor<any>>;
+ export interface UseThemeProps {
+     /** Current theme name */
+     theme?: string;
+@@ -43,7 +43,7 @@
+     /** If `enableSystem` is true, represents the System theme. Otherwise, is `undefined` */
+     systemTheme?: 'dark' | 'light';
+     /** Update the theme */
+-    setTheme: (theme: string) => void;
++    setTheme: (newTheme: string) => void;
+     /** If `forcedTheme` is set, this will be `true` */
+     forcedTheme?: string;
+ }

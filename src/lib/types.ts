@@ -1,0 +1,35 @@
+export type Reagent = {
+  id: string;
+  name: string;
+  color: string; // hex code
+};
+
+export type LiquidContents = {
+  reagent: Reagent | null;
+  volume: number; // in ml
+  color: string;
+};
+
+export type EquipmentType = 'beaker' | 'flask' | 'burner';
+
+export type LabItem = {
+  id: string;
+  type: EquipmentType;
+  position: { x: number; y: number };
+  contents?: LiquidContents;
+  isHeating?: boolean;
+};
+
+export type ExperimentStep = {
+  id:string;
+  instruction: string;
+};
+
+export type Experiment = {
+  id: string;
+  name: string;
+  description: string;
+  steps: ExperimentStep[];
+  reagents: Reagent[];
+  expectedResults: string;
+};
