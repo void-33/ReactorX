@@ -155,8 +155,8 @@ export default function ControlPanel({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <p className="text-xs text-blue-200 font-semibold mb-2">📋 Quick Guide:</p>
-        <ul className="text-xs text-blue-300 space-y-1">
+        <p className="text-lg text-blue-200 font-semibold mb-2">📋 Quick Guide:</p>
+        <ul className="text-sm text-blue-300 space-y-1">
           <li>• Open valves to isolate leak source</li>
           <li>• Activate spray to contain gas</li>
           <li>• Equip PPE before approaching</li>
