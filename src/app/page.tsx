@@ -40,6 +40,7 @@ export default function ChemSimLabPage() {
       id: `${type}-${Date.now()}`,
       type,
       position: { x: 200, y: 200 },
+			chemicals: [],
       isDraggingEnabled: true,
       isSelected: false,
       ...(type === 'beaker' || type === 'flask' ? { contents: { reagent: null, volume: 0, color: 'transparent' } } : {}),
@@ -51,12 +52,13 @@ export default function ChemSimLabPage() {
   const addReagentToItem = (itemId: string, reagent: Reagent, volume: number) => {
     setLabItems(prevItems => prevItems.map(item => {
       if (item.id === itemId && item.contents) {
-        if(item.contents.volume > 0 && item.contents.reagent?.id !== reagent.id) {
-            setLastInteractionToast({ title: 'Mixing not implemented', description: 'This simulation does not support mixing different reagents yet.', variant: 'destructive'});
-            return item;
-        }
+        // if(item.contents.volume > 0 && item.contents.reagent?.id !== reagent.id) {
+        //     setLastInteractionToast({ title: 'Mixing not implemented', description: 'This simulation does not support mixing different reagents yet.', variant: 'destructive'});
+        //     return item;
+        // }
+				const finalChemicals = [...item.chemicals, { reagent, volume }];
         const newVolume = item.contents.volume + volume;
-        return { ...item, contents: { reagent, volume: newVolume, color: reagent.color } };
+        return { ...item, contents: { reagent, volume: newVolume, color: reagent.color }, chemicals: finalChemicals };
       }
       return item;
     }));
