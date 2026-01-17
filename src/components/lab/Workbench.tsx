@@ -6,11 +6,13 @@ import type { LabItem } from '@/lib/types';
 import Beaker from './equipment/Beaker';
 import Flask from './equipment/Flask';
 import Burner from './equipment/Burner';
+import { X } from 'lucide-react';
 
 interface WorkbenchProps {
   items: LabItem[];
   onDragEnd: (id: string, info: PanInfo) => void;
   onItemClick: (id: string) => void;
+  onRemoveItem: (id: string) => void;
   itemRefs: React.MutableRefObject<Map<string, HTMLDivElement | null>>;
 }
 
@@ -21,7 +23,7 @@ const equipmentMap = {
 };
 
 const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
-  ({ items, onDragEnd, onItemClick, itemRefs }, ref) => {
+  ({ items, onDragEnd, onItemClick, onRemoveItem, itemRefs }, ref) => {
     return (
       <div
         ref={ref}
@@ -45,6 +47,17 @@ const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
               } ${item.isSelected ? 'ring-2 ring-primary ring-offset-2' : ''}`}
               whileDrag={{ scale: 1.1, zIndex: 20 }}
             >
+              {item.isSelected && (
+                <div
+                  className="absolute -top-2 -right-2 z-20 bg-destructive text-destructive-foreground rounded-full p-1 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveItem(item.id);
+                  }}
+                >
+                  <X size={16} />
+                </div>
+              )}
               <EquipmentComponent {...item} />
             </motion.div>
           );
