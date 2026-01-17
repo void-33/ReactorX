@@ -46,7 +46,7 @@ export default function ChemSimLabPage() {
       isSelected: false,
       ...(type === 'beaker' || type === 'flask' || type === 'burette' ? { contents: { reagent: null, volume: 0, color: 'transparent', concentration: 0.1 } } : {}),
       ...(type === 'burner' ? { isHeating: false } : {}),
-      ...(type === 'pipe' ? { rotation: 0 } : {}),
+      ...(type === 'pipe' || type === 'elbow' ? { rotation: 0 } : {}),
     };
     setLabItems((prev) => [...prev, newItem]);
   };
@@ -61,7 +61,7 @@ export default function ChemSimLabPage() {
 
   const rotatePipe = (itemId: string) => {
     setLabItems((prev) => prev.map(item => {
-      if (item.id === itemId && item.type === 'pipe') {
+      if (item.id === itemId && (item.type === 'pipe' || item.type === 'elbow')) {
         return { ...item, rotation: ((item.rotation || 0) + 90) % 360 };
       }
       return item;
