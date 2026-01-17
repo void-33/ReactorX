@@ -64,9 +64,37 @@ export default function ChemSimLabPage() {
         //     setLastInteractionToast({ title: 'Mixing not implemented', description: 'This simulation does not support mixing different reagents yet.', variant: 'destructive'});
         //     return item;
         // }
-				const finalChemicals = [...item.chemicals, { reagent, volume, concentration }];
+				let found: boolean = false;
+				let indicator : boolean = reagent.id === 'phenolphthalein';
+				const newChemicals = item.chemicals.map(chemical => {
+					if (chemical.reagent.id === 'phenolphthalein') indicator = true;
+					if (chemical.reagent.id === reagent.id) {
+						found = true;
+						const newConcentration = (chemical.concentration * chemical.volume + volume * concentration) / (chemical.volume + volume);
+						return { ...chemical, volume: chemical.volume + volume, concentration: newConcentration };
+					}
+					return chemical;
+				})
+				const finalChemicals = found ? newChemicals : [...item.chemicals, { reagent, volume, concentration }];
         const newVolume = item.contents.volume + volume;
-        return { ...item, contents: { reagent, volume: newVolume, color: reagent.color, concentration }, chemicals: finalChemicals };
+				let molesOfHydrogen : number = 0;
+				item.chemicals.forEach(chemical => {
+					if (chemical.reagent.id === 'hcl') {
+						molesOfHydrogen += chemical.volume * chemical.concentration;
+					}
+					else if (chemical.reagent.id === 'naoh') {
+						molesOfHydrogen -= chemical.volume * chemical.concentration;
+					}
+				})
+				molesOfHydrogen /= 1000;
+				const ph = (molesOfHydrogen === 0) ? 7 : ((molesOfHydrogen > 0) ? -Math.log10(molesOfHydrogen) : 14 + Math.log10(-molesOfHydrogen));
+				let newColor = reagent.color;
+				if (indicator) {
+					if (ph >= 10) newColor = "#ff0000ff";
+					else if (ph >= 8.2) newColor = "#AA336Aff";
+					else newColor = "#ffffffff";
+				}
+        return { ...item, contents: { reagent, volume: newVolume, color: newColor, concentration }, chemicals: finalChemicals };
       }
       return item;
     }));
@@ -104,15 +132,6 @@ export default function ChemSimLabPage() {
       }, 300);
       
       lastClickTimeRef.current = now;
-    }
-  };
-
-  const handleWorkbenchClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      setSelectedItemId(null);
-      setLabItems((prev) =>
-        prev.map((item) => ({ ...item, isSelected: false }))
-      );
     }
   };
 
@@ -280,7 +299,6 @@ export default function ChemSimLabPage() {
               items={labItems}
               onDragEnd={handleDragEnd}
               onItemClick={handleItemClick}
-              onWorkbenchClick={handleWorkbenchClick}
               onRemoveItem={removeLabItem}
               itemRefs={itemRefs}
             />
