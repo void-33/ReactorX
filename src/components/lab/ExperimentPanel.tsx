@@ -17,6 +17,7 @@ interface ExperimentPanelProps {
   items: LabItem[];
   selectedItem: LabItem | null;
   onAddReagent: (itemId: string, reagent: Reagent, volume: number, concentration: number) => void;
+	onRemoveItem: (itemId: string) => void;
   onGetGuidance: () => void;
   onAnalyzeCompletion: () => void;
   aiGuidance: { guidance: string; isCorrect: boolean } | null;
@@ -29,6 +30,7 @@ export default function ExperimentPanel({
   items,
   selectedItem,
   onAddReagent,
+	onRemoveItem,
   onGetGuidance,
   onAnalyzeCompletion,
   aiGuidance,
