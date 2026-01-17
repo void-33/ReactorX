@@ -257,9 +257,25 @@ export default function EmergencyResponseSimulation() {
         onReset={handleReset}
       />
 
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 p-4 overflow-hidden">
-        {/* Main Canvas */}
-        <div className="lg:col-span-3 flex flex-col min-h-0">
+      <main className="flex-1 grid grid-cols-12 gap-4 p-4 overflow-hidden">
+        {/* Left Sidebar - Control Panel */}
+        <div className="col-span-12 md:col-span-2 flex flex-col min-h-0">
+          <ControlPanel
+            valvesOpen={valvesOpen}
+            pumpsRunning={pumpsRunning}
+            spraySystemActive={spraySystemActive}
+            currentPPE={currentPPE}
+            onToggleValve={handleToggleValve}
+            onTogglePump={handleTogglePump}
+            onToggleSpray={handleToggleSpray}
+            onPPEClick={() => setPpeModalOpen(true)}
+            onEvacuate={handleEvacuation}
+            disabled={evacuationTriggered}
+          />
+        </div>
+        
+        {/* Center - Main Canvas */}
+        <div className="col-span-12 md:col-span-7 flex flex-col min-h-0">
           <div className="flex-1 relative">
             <PlantSchematic
               gasIntensity={gasConcentration}
@@ -269,25 +285,11 @@ export default function EmergencyResponseSimulation() {
               pumpsRunning={pumpsRunning}
               onComponentClick={handleComponentClick}
             />
-
-            {/* Control Panel Overlay */}
-            <ControlPanel
-              valvesOpen={valvesOpen}
-              pumpsRunning={pumpsRunning}
-              spraySystemActive={spraySystemActive}
-              currentPPE={currentPPE}
-              onToggleValve={handleToggleValve}
-              onTogglePump={handleTogglePump}
-              onToggleSpray={handleToggleSpray}
-              onPPEClick={() => setPpeModalOpen(true)}
-              onEvacuate={handleEvacuation}
-              disabled={evacuationTriggered}
-            />
           </div>
         </div>
-
+        
         {/* Right Sidebar */}
-        <div className="lg:col-span-1 flex flex-col min-h-0">
+        <div className="col-span-12 md:col-span-3 flex flex-col min-h-0">
           <RightSidebar
             gasConcentration={gasConcentration}
             elapsedTime={elapsedTime}
@@ -301,6 +303,7 @@ export default function EmergencyResponseSimulation() {
             }}
           />
         </div>
+        
       </main>
 
       {/* PPE Selection Modal */}
