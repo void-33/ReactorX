@@ -6,6 +6,7 @@ import type { LabItem } from '@/lib/types';
 import Beaker from './equipment/Beaker';
 import Flask from './equipment/Flask';
 import Burner from './equipment/Burner';
+import Burette from './equipment/Burette';
 
 interface WorkbenchProps {
   items: LabItem[];
@@ -18,6 +19,7 @@ const equipmentMap = {
   beaker: Beaker,
   flask: Flask,
   burner: Burner,
+  burette: Burette
 };
 
 const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(

@@ -1,6 +1,6 @@
 'use client';
 
-import React,{useRef, useState, useEffect, useEffectEvent} from 'react';
+import React,{useRef, useState, useEffect} from 'react';
 import type { LabItem } from '@/lib/types';
 
 export default function Flask({ contents, isHeating }: LabItem) {

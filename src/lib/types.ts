@@ -10,7 +10,7 @@ export type LiquidContents = {
   color: string;
 };
 
-export type EquipmentType = 'beaker' | 'flask' | 'burner';
+export type EquipmentType = 'beaker' | 'flask' | 'burner' | 'burette';
 
 export type LabItem = {
   id: string;

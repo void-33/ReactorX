@@ -1,0 +1,59 @@
+'use client';
+
+import React, { useRef, useState, useEffect } from 'react';
+import type { LabItem } from '@/lib/types';
+
+export default function Burette({ contents, isHeating }: LabItem) {
+    const burettePathRef = useRef<SVGPathElement | null>(null);
+
+    // max capacity of burette
+    const MAX_VOLUME = 100;
+
+    const content_volume = Math.min((contents?.volume || 0), MAX_VOLUME);
+    const fillRatio = content_volume / MAX_VOLUME;
+
+    const [bbox, setBBox] = useState({ x: 0, y: 0, width: 0, height: 0 });
+
+    const   contentHeight = Math.max(0, bbox.height * fillRatio);
+    const contentY = bbox.y + bbox.height - contentHeight;
+
+    useEffect(() => {
+        const update = () => {
+            const burettePath = burettePathRef.current
+            if (burettePath) {
+                const b = burettePath.getBBox();
+                setBBox({
+                    x: b.x,
+                    y: b.y,
+                    width: b.width,
+                    height: b.height
+                })
+            }
+        }
+        update();
+        window.addEventListener('resize', update);
+        return () => window.removeEventListener('resize', update);
+    }, [])
+
+    return (
+        <svg width="80" height="250" viewBox="60 0 50 300" fill="#ffffff">
+
+            <defs>
+                <clipPath id='burette-mask'>
+                    <path d="m79.686 21.327-0.046466 181.12s0.32525 7.1555 1.0687 9.1535c0.74343 1.998 3.0202 7.3878 5.6222 7.4343 2.602 0.0465 7.0626-6.1333 7.1555-8.2706 0.09293-2.1374 1.1616-7.7595 1.2081-9.3858 0.04646-1.6263-0.18586-180.1-0.18586-180.1z" />
+                    <path d="m84.767 222.69-0.06571 9.3309 4.2055 0.85424v-10.645z" />
+                    <path d="m84.898 253.91 0.39426 31.41s0.26284 2.4313 1.7742 2.497c1.5113 0.0657 1.6428-2.4313 1.6428-2.4313v-32.395z" />
+                </clipPath>
+            </defs>
+
+            {/* content rect */}
+            <rect x={bbox.x} y={contentY} width={bbox.width} height={bbox.height} fill='blue' clipPath='url(#burette-mask)'></rect>
+
+            <g transform="matrix(.37668 0 0 .98693 44.41 .19991)">
+                <path ref={burettePathRef} strokeWidth={2} d="m141.42 15.29h-57.425a3.2493 3.2493 0 0 0 0 6.4985h4.5302v180.62a24.213 24.213 0 0 0 14.247 22.027l0.28103 8.748-4.1866-0.37552a9.3729 9.3729 0 0 0-8.873 4.3115h-3.6242v-7.7482a3.2493 3.2493 0 0 0-6.4985 0v7.7482h-5.4988a3.1243 3.1243 0 0 0-3.1243 3.1244v11.935a3.1243 3.1243 0 0 0 3.1243 3.1243h5.3738v7.7483a3.2494 3.2494 0 1 0 6.4987 0v-7.6234h4.4052a9.3729 9.3729 0 0 0 0.81241 0.87501 9.5292 9.5292 0 0 0 6.4361 2.4995h0.84313l5.0302-0.43691 1.0309 30.556a7.811 7.811 0 0 0 15.622 0l1.0628-32.149 5.8112-0.53138a10.498 10.498 0 0 0 0-20.902l-5.0302-0.43692 0.34363-10.435a24.213 24.213 0 0 0 14.247-22.058v-180.49h4.5303a3.2493 3.2493 0 0 0 0-6.4985zm-63.674 228.45h10.779v5.3426h-10.779zm36.273 44.928a1.3435 1.3435 0 0 1-1.3122 1.281 1.3122 1.3122 0 0 1-1.3123-1.281l-1.0309-30.931 4.6241-0.40621zm16.371-42.866a3.9991 3.9991 0 0 1-3.6554 3.999l-28.431 2.5307a3.1243 3.1243 0 0 1-3.2805-3.1243v-6.9047a3.1243 3.1243 0 0 1 3.1243-3.1243h0.28105l28.431 2.5307a3.9991 3.9991 0 0 1 3.5305 4.0616zm-14.559-11.435-6.2486-0.56208-0.25033-7.4046a23.807 23.807 0 0 0 6.7797 0zm14.559-31.899a17.7 17.7 0 1 1-35.399 0v-24.994l2.4995 0.34363a136.53 136.53 0 0 0 15.184 0.74983 3.2493 3.2493 0 0 0 0-6.4986 99.572 99.572 0 0 1-17.684-1.1872v-27.681l2.4995 0.34365a136.53 136.53 0 0 0 15.184 0.74982 3.2493 3.2493 0 0 0 0-6.4985 99.572 99.572 0 0 1-17.684-1.1872v-27.557l2.4995 0.34363a136.53 136.53 0 0 0 15.184 0.74984 3.2493 3.2493 0 0 0 0-6.4986 99.572 99.572 0 0 1-17.684-1.1872v-27.588l2.4995 0.34362a136.53 136.53 0 0 0 15.184 0.74984 3.2493 3.2493 0 0 0 0-6.4986 99.572 99.572 0 0 1-17.684-1.1872v-46.365h35.399z" />
+            </g>
+
+        </svg>
+    );
+
+}
