@@ -18,6 +18,8 @@ export type LabItem = {
   position: { x: number; y: number };
   contents?: LiquidContents;
   isHeating?: boolean;
+  isSelected?: boolean;
+  isDraggingEnabled?: boolean;
 };
 
 export type ExperimentStep = {
