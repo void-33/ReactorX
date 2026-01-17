@@ -32,7 +32,7 @@ export default function ControlPanel({
   disabled,
 }: ControlPanelProps) {
   return (
-    <div className="absolute bottom-6 left-6 z-30 space-y-4 max-w-sm">
+    <div className=" flex flex-col h-full bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-l border-blue-500/20 shadow-xl">
       {/* Control Panel Card */}
       <motion.div
         className="bg-gradient-to-br from-slate-900 to-slate-800 border border-blue-500/30 rounded-xl shadow-2xl p-6 backdrop-blur-sm"
