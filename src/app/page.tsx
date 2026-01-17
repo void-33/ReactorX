@@ -19,7 +19,7 @@ export default function ChemSimLabPage() {
   const [aiGuidance, setAiGuidance] = useState<{ guidance: string; isCorrect: boolean } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<{ isExperimentComplete: boolean; completionReason: string } | null>(null);
-  const [lastInteractionToast, setLastInteractionToast] = useState<{title: string, description: string} | null>(null);
+  const [lastInteractionToast, setLastInteractionToast] = useState<{title: string, description: string, variant?: "default" | "destructive" } | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   
   const workbenchRef = useRef<HTMLDivElement>(null);
@@ -40,23 +40,61 @@ export default function ChemSimLabPage() {
       id: `${type}-${Date.now()}`,
       type,
       position: { x: 200, y: 200 },
+			chemicals: [],
       isDraggingEnabled: true,
       isSelected: false,
-      ...(type === 'beaker' || type === 'flask' ? { contents: { reagent: null, volume: 0, color: 'transparent' } } : {}),
+      ...(type === 'beaker' || type === 'flask' ? { contents: { reagent: null, volume: 0, color: 'transparent', concentration: 0.1 } } : {}),
       ...(type === 'burner' ? { isHeating: false } : {}),
     };
     setLabItems((prev) => [...prev, newItem]);
   };
+
+  const removeLabItem = (itemId: string) => {
+    setLabItems((prev) => prev.filter(item => item.id !== itemId));
+    if (selectedItemId === itemId) {
+      setSelectedItemId(null);
+    }
+    setLastInteractionToast({ title: "Item Removed", description: "Equipment removed from workbench."});
+  };
   
-  const addReagentToItem = (itemId: string, reagent: Reagent, volume: number) => {
+  const addReagentToItem = (itemId: string, reagent: Reagent, volume: number, concentration: number) => {
     setLabItems(prevItems => prevItems.map(item => {
       if (item.id === itemId && item.contents) {
-        if(item.contents.volume > 0 && item.contents.reagent?.id !== reagent.id) {
-            setLastInteractionToast({ title: 'Mixing not implemented', description: 'This simulation does not support mixing different reagents yet.', variant: 'destructive'});
-            return item;
-        }
+        // if(item.contents.volume > 0 && item.contents.reagent?.id !== reagent.id) {
+        //     setLastInteractionToast({ title: 'Mixing not implemented', description: 'This simulation does not support mixing different reagents yet.', variant: 'destructive'});
+        //     return item;
+        // }
+				let found: boolean = false;
+				let indicator : boolean = reagent.id === 'phenolphthalein';
+				const newChemicals = item.chemicals.map(chemical => {
+					if (chemical.reagent.id === 'phenolphthalein') indicator = true;
+					if (chemical.reagent.id === reagent.id) {
+						found = true;
+						const newConcentration = (chemical.concentration * chemical.volume + volume * concentration) / (chemical.volume + volume);
+						return { ...chemical, volume: chemical.volume + volume, concentration: newConcentration };
+					}
+					return chemical;
+				})
+				const finalChemicals = found ? newChemicals : [...item.chemicals, { reagent, volume, concentration }];
         const newVolume = item.contents.volume + volume;
-        return { ...item, contents: { reagent, volume: newVolume, color: reagent.color } };
+				let molesOfHydrogen : number = 0;
+				item.chemicals.forEach(chemical => {
+					if (chemical.reagent.id === 'hcl') {
+						molesOfHydrogen += chemical.volume * chemical.concentration;
+					}
+					else if (chemical.reagent.id === 'naoh') {
+						molesOfHydrogen -= chemical.volume * chemical.concentration;
+					}
+				})
+				molesOfHydrogen /= 1000;
+				const ph = (molesOfHydrogen === 0) ? 7 : ((molesOfHydrogen > 0) ? -Math.log10(molesOfHydrogen) : 14 + Math.log10(-molesOfHydrogen));
+				let newColor = reagent.color;
+				if (indicator) {
+					if (ph >= 10) newColor = "#ff0000ff";
+					else if (ph >= 8.2) newColor = "#AA336Aff";
+					else newColor = "#ffffffff";
+				}
+        return { ...item, contents: { reagent, volume: newVolume, color: newColor, concentration }, chemicals: finalChemicals };
       }
       return item;
     }));
@@ -94,6 +132,15 @@ export default function ChemSimLabPage() {
       }, 300);
       
       lastClickTimeRef.current = now;
+    }
+  };
+
+  const handleWorkbenchClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      setSelectedItemId(null);
+      setLabItems((prev) =>
+        prev.map((item) => ({ ...item, isSelected: false }))
+      );
     }
   };
 
@@ -241,7 +288,18 @@ export default function ChemSimLabPage() {
       <Header onSave={() => console.log(JSON.stringify(labItems))} onReset={handleReset} />
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 overflow-hidden">
         <div className="lg:col-span-3 xl:col-span-2">
-          <EquipmentPanel onAddItem={addLabItem} />
+          <ExperimentPanel
+            experiment={sampleExperiment}
+            currentStepIndex={currentStepIndex}
+            items={labItems}
+            selectedItem={labItems.find(item => item.id === selectedItemId) || null}
+            onAddReagent={addReagentToItem}
+            onRemoveItem={removeLabItem}
+            onGetGuidance={handleGetGuidance}
+            onAnalyzeCompletion={handleAnalyzeCompletion}
+            aiGuidance={aiGuidance}
+            isLoading={isLoading}
+          />
         </div>
         
         <div className="lg:col-span-6 xl:col-span-8 h-full">
@@ -250,21 +308,14 @@ export default function ChemSimLabPage() {
               items={labItems}
               onDragEnd={handleDragEnd}
               onItemClick={handleItemClick}
+               onWorkbenchClick={handleWorkbenchClick}
+              onRemoveItem={removeLabItem}
               itemRefs={itemRefs}
             />
         </div>
         
         <div className="lg:col-span-3 xl:col-span-2">
-          <ExperimentPanel
-            experiment={sampleExperiment}
-            currentStepIndex={currentStepIndex}
-            items={labItems}
-            onAddReagent={addReagentToItem}
-            onGetGuidance={handleGetGuidance}
-            onAnalyzeCompletion={handleAnalyzeCompletion}
-            aiGuidance={aiGuidance}
-            isLoading={isLoading}
-          />
+          <EquipmentPanel onAddItem={addLabItem} />
         </div>
       </main>
       {analysisResult && (

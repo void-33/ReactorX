@@ -1,20 +1,23 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle, HelpCircle, Lightbulb, Loader, FlaskConical, AlertCircle } from 'lucide-react';
+import { CheckCircle, HelpCircle, Lightbulb, Loader, FlaskConical, AlertCircle, TestTube } from 'lucide-react';
 import type { Experiment, LabItem, Reagent } from '@/lib/types';
+import { Input } from '@/components/ui/input';
 
 interface ExperimentPanelProps {
   experiment: Experiment;
   currentStepIndex: number;
   items: LabItem[];
-  onAddReagent: (itemId: string, reagent: Reagent, volume: number) => void;
+  selectedItem: LabItem | null;
+  onAddReagent: (itemId: string, reagent: Reagent, volume: number, concentration: number) => void;
+	onRemoveItem: (itemId: string) => void;
   onGetGuidance: () => void;
   onAnalyzeCompletion: () => void;
   aiGuidance: { guidance: string; isCorrect: boolean } | null;
@@ -25,21 +28,24 @@ export default function ExperimentPanel({
   experiment,
   currentStepIndex,
   items,
+  selectedItem,
   onAddReagent,
+	onRemoveItem,
   onGetGuidance,
   onAnalyzeCompletion,
   aiGuidance,
   isLoading,
 }: ExperimentPanelProps) {
-  const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [selectedReagentId, setSelectedReagentId] = useState<string>('');
+  const [selectedVolume, setSelectedVolume] = useState<number>(50);
+  const [selectedConcentration, setSelectedConcentration] = useState<number>(0.1);
 
   const containerItems = items.filter(item => item.contents);
   const selectedReagent = experiment.reagents.find(r => r.id === selectedReagentId);
 
   const handleAddReagent = () => {
-    if (selectedItemId && selectedReagent) {
-      onAddReagent(selectedItemId, selectedReagent, 50); // Add 50ml by default
+    if (selectedItem && selectedReagent) {
+      onAddReagent(selectedItem.id, selectedReagent, selectedVolume, selectedConcentration);
     }
   };
 
@@ -50,31 +56,9 @@ export default function ExperimentPanel({
         <CardDescription>{experiment.description}</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
-        <div>
-            <h3 className="font-semibold mb-2 text-sm">Add Reagents</h3>
-            <div className="space-y-2">
-                <Select value={selectedItemId} onValueChange={setSelectedItemId}>
-                    <SelectTrigger><SelectValue placeholder="Select Container" /></SelectTrigger>
-                    <SelectContent>
-                        {containerItems.length > 0 ? containerItems.map(item => (
-                            <SelectItem key={item.id} value={item.id}>{item.type} ({item.id.slice(-4)})</SelectItem>
-                        )) : <SelectItem value="none" disabled>No containers</SelectItem>}
-                    </SelectContent>
-                </Select>
-                <Select value={selectedReagentId} onValueChange={setSelectedReagentId}>
-                    <SelectTrigger><SelectValue placeholder="Select Reagent" /></SelectTrigger>
-                    <SelectContent>
-                        {experiment.reagents.map(reagent => (
-                            <SelectItem key={reagent.id} value={reagent.id}>{reagent.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <Button onClick={handleAddReagent} disabled={!selectedItemId || !selectedReagentId} className="w-full">Add 50ml</Button>
-            </div>
-        </div>
-        <Separator />
-        <div className="flex-1 flex flex-col min-h-0">
-          <h3 className="font-semibold mb-2 text-sm">Procedure</h3>
+        
+				<div className="flex flex-col min-h-0">
+          <h3 className="font-semibold mb-2 text-lg">Procedure</h3>
           <ScrollArea className="flex-1 pr-4">
             <ul className="space-y-3">
               {experiment.steps.map((step, index) => (
@@ -88,6 +72,81 @@ export default function ExperimentPanel({
             </ul>
           </ScrollArea>
         </div>
+
+        <CardFooter className="flex flex-col sm:flex-row gap-2">
+          <Button variant="outline" onClick={onGetGuidance} className="w-full" disabled={isLoading}>
+            {isLoading ? <Loader className="animate-spin mr-2" /> : <HelpCircle className="mr-2" />} Get Hint
+          </Button>
+          <Button onClick={onAnalyzeCompletion} className="w-full" disabled={isLoading}>
+            {isLoading ? <Loader className="animate-spin mr-2" /> : <FlaskConical className="mr-2" />} Complete
+          </Button>
+        </CardFooter>
+
+        <Separator />
+        
+        
+        <div className={`p-3 rounded-md border-2 ${selectedItem ? 'bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700' : 'bg-yellow-50 dark:bg-yellow-950 border-yellow-300 dark:border-yellow-700'}`}>
+					<p className={`text-xs font-semibold mb-1 ${selectedItem ? 'text-green-900 dark:text-green-100' : 'text-yellow-900 dark:text-yellow-100'}`}>
+						{selectedItem ? '✓ Equipment Selected' : '⚠ No Equipment Selected'}
+					</p>
+					<p className={`text-sm font-semibold ${selectedItem ? 'text-green-800 dark:text-green-200' : 'text-yellow-800 dark:text-yellow-200'}`}>
+						{selectedItem ? (
+							<>
+								<span className="block">{selectedItem.type.toUpperCase()}</span>
+								{selectedItem.contents && (
+									<>
+										<span className="text-xs mt-1 mr-4">Volume: {selectedItem.contents.volume.toFixed(1)}ml</span>
+									</>
+								)}
+							</>
+						) : (
+							'Select equipment from the workbench.'
+						)}
+					</p>
+				</div>        
+
+        <Separator />
+
+        <div>
+            <h3 className="font-semibold mb-2 text-lg">Add Reagents</h3>
+            <div className="space-y-2">
+                <Select value={selectedReagentId} onValueChange={setSelectedReagentId}>
+                    <SelectTrigger><SelectValue placeholder="Select Reagent" /></SelectTrigger>
+                    <SelectContent>
+                        {experiment.reagents.map(reagent => (
+                            <SelectItem key={reagent.id} value={reagent.id}>{reagent.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <div className="flex items-center gap-2">
+                  <Input
+                      type="number"
+                      placeholder="Volume (ml)"
+                      value={selectedVolume}
+                      onChange={(e) => setSelectedVolume(Number(e.target.value))}
+                      min="1"
+                      className="w-full"
+                  />
+                  <span>ml</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                      type="number"
+                      placeholder="Concentration (M)"
+                      value={selectedConcentration}
+                      onChange={(e) => setSelectedConcentration(Number(e.target.value))}
+                      min="0.1"
+                      className="w-full"
+                  />
+                  <span>M</span>
+                </div>
+                
+                <Button onClick={handleAddReagent} disabled={!selectedItem || !selectedReagentId || selectedVolume <= 0} className="w-full">
+                    Add {selectedVolume}ml
+                </Button>
+            </div>
+        </div>
+        
         {aiGuidance && (
           <Alert variant={aiGuidance.isCorrect ? "default" : "destructive"} className="mt-4">
             {aiGuidance.isCorrect ? <Lightbulb className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
@@ -96,14 +155,6 @@ export default function ExperimentPanel({
           </Alert>
         )}
       </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row gap-2">
-        <Button variant="outline" onClick={onGetGuidance} className="w-full" disabled={isLoading}>
-          {isLoading ? <Loader className="animate-spin mr-2" /> : <HelpCircle className="mr-2" />} Get Hint
-        </Button>
-        <Button onClick={onAnalyzeCompletion} className="w-full" disabled={isLoading}>
-          {isLoading ? <Loader className="animate-spin mr-2" /> : <FlaskConical className="mr-2" />} Complete
-        </Button>
-      </CardFooter>
     </Card>
   );
 }

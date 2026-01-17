@@ -4,10 +4,17 @@ export type Reagent = {
   color: string; // hex code
 };
 
+export type Liquid = {
+	reagent: Reagent;
+	volume: number;
+	concentration: number;
+};
+
 export type LiquidContents = {
   reagent: Reagent | null;
   volume: number; // in ml
   color: string;
+	concentration: number;
 };
 
 export type EquipmentType = 'beaker' | 'flask' | 'burner' | 'burette';
@@ -17,6 +24,7 @@ export type LabItem = {
   type: EquipmentType;
   position: { x: number; y: number };
   contents?: LiquidContents;
+	chemicals: Liquid[];
   isHeating?: boolean;
   isSelected?: boolean;
   isDraggingEnabled?: boolean;
