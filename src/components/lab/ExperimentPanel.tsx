@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle, HelpCircle, Lightbulb, Loader, FlaskConical, AlertCircle, TestTube } from 'lucide-react';
 import type { Experiment, LabItem, Reagent } from '@/lib/types';
+import { Input } from '@/components/ui/input';
 
 interface ExperimentPanelProps {
   experiment: Experiment;
@@ -34,13 +35,14 @@ export default function ExperimentPanel({
   isLoading,
 }: ExperimentPanelProps) {
   const [selectedReagentId, setSelectedReagentId] = useState<string>('');
+  const [selectedVolume, setSelectedVolume] = useState<number>(50);
 
   const containerItems = items.filter(item => item.contents);
   const selectedReagent = experiment.reagents.find(r => r.id === selectedReagentId);
 
   const handleAddReagent = () => {
     if (selectedItem && selectedReagent) {
-      onAddReagent(selectedItem.id, selectedReagent, 50); // Add 50ml by default
+      onAddReagent(selectedItem.id, selectedReagent, selectedVolume);
     }
   };
 
@@ -86,7 +88,21 @@ export default function ExperimentPanel({
                         ))}
                     </SelectContent>
                 </Select>
-                <Button onClick={handleAddReagent} disabled={!selectedItem || !selectedReagentId} className="w-full">Add 50ml</Button>
+                <div className="flex items-center gap-2">
+                  <Input
+                      type="number"
+                      placeholder="Volume (ml)"
+                      value={selectedVolume}
+                      onChange={(e) => setSelectedVolume(Number(e.target.value))}
+                      min="1"
+                      className="w-full"
+                  />
+                  <span>ml</span>
+                </div>
+                
+                <Button onClick={handleAddReagent} disabled={!selectedItem || !selectedReagentId || selectedVolume <= 0} className="w-full">
+                    Add {selectedVolume}ml
+                </Button>
             </div>
         </div>
 
