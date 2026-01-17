@@ -9,6 +9,7 @@ import Burner from './equipment/Burner';
 import Burette from './equipment/Burette';
 import Pipe from './equipment/Pipe';
 import StorageTank from './equipment/StorageTank';
+import Elbow from './equipment/Elbow';
 import Drop from './equipment/Drop';
 import { X } from 'lucide-react';
 
@@ -30,6 +31,7 @@ const equipmentMap = {
   burette: Burette,
   storagetank: StorageTank,
   pipe: Pipe,
+  elbow:Elbow,
 };
 
 const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
@@ -59,7 +61,7 @@ const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
               className={`absolute z-10 ${
                 item.isDraggingEnabled !== false ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
               } ${item.isSelected && item.type !== 'pipe' ? 'ring-2 ring-primary ring-offset-2' : ''}`}
-              whileDrag={{ scale: item.type === 'pipe' ? 1.0 : 1.1, zIndex: 20 }}
+              // whileDrag={{ scale: item.type === 'pipe' ? 1.0 : 1.1, zIndex: 20 }}
             >
               {item.isSelected && (
                 <>
