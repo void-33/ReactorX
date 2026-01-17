@@ -13,6 +13,7 @@ export default function Beaker({ contents, isHeating }: LabItem) {
   const content_volume = Math.min((contents?.volume || 0), MAX_VOLUME);
   const fillRatio = content_volume / MAX_VOLUME;
 
+
   const [bbox, setBBox] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
   const contentHeight = Math.max(0, bbox.height * fillRatio);
@@ -24,14 +25,12 @@ export default function Beaker({ contents, isHeating }: LabItem) {
       const beakerPath = beakerPathRef.current
       if (beakerPath) {
         const b = beakerPath.getBBox();
-        setBBox(prev => ({
-          ...prev,
+        setBBox({
           x: b.x,
           y: b.y,
           width: b.width,
           height: b.height
         })
-        )
       }
     }
     update();
