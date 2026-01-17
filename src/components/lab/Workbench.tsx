@@ -34,7 +34,7 @@ const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
           return (
             <motion.div
               key={item.id}
-              ref={(el) => itemRefs.current.set(item.id, el)}
+              ref={(el) => void itemRefs.current.set(item.id, el)}
               drag={item.isDraggingEnabled ?? true}
               dragMomentum={false}
               onDragEnd={(_, info) => onDragEnd(item.id, info)}
