@@ -279,7 +279,18 @@ export default function ChemSimLabPage() {
       <Header onSave={() => console.log(JSON.stringify(labItems))} onReset={handleReset} />
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 overflow-hidden">
         <div className="lg:col-span-3 xl:col-span-2">
-          <EquipmentPanel onAddItem={addLabItem} />
+          <ExperimentPanel
+            experiment={sampleExperiment}
+            currentStepIndex={currentStepIndex}
+            items={labItems}
+            selectedItem={labItems.find(item => item.id === selectedItemId) || null}
+            onAddReagent={addReagentToItem}
+            onRemoveItem={removeLabItem}
+            onGetGuidance={handleGetGuidance}
+            onAnalyzeCompletion={handleAnalyzeCompletion}
+            aiGuidance={aiGuidance}
+            isLoading={isLoading}
+          />
         </div>
         
         <div className="lg:col-span-6 xl:col-span-8 h-full">
@@ -294,18 +305,7 @@ export default function ChemSimLabPage() {
         </div>
         
         <div className="lg:col-span-3 xl:col-span-2">
-          <ExperimentPanel
-            experiment={sampleExperiment}
-            currentStepIndex={currentStepIndex}
-            items={labItems}
-            selectedItem={labItems.find(item => item.id === selectedItemId) || null}
-            onAddReagent={addReagentToItem}
-            onRemoveItem={removeLabItem}
-            onGetGuidance={handleGetGuidance}
-            onAnalyzeCompletion={handleAnalyzeCompletion}
-            aiGuidance={aiGuidance}
-            isLoading={isLoading}
-          />
+          <EquipmentPanel onAddItem={addLabItem} />
         </div>
       </main>
       {analysisResult && (
