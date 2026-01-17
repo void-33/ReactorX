@@ -259,6 +259,7 @@ export default function ChemSimLabPage() {
             experiment={sampleExperiment}
             currentStepIndex={currentStepIndex}
             items={labItems}
+            selectedItem={labItems.find(item => item.id === selectedItemId) || null}
             onAddReagent={addReagentToItem}
             onGetGuidance={handleGetGuidance}
             onAnalyzeCompletion={handleAnalyzeCompletion}
