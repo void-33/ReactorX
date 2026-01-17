@@ -52,24 +52,27 @@ export default function ExperimentPanel({
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
         
-        {selectedItem && (
-            <div>
-                <h3 className="font-semibold mb-2 text-sm">Selected Item</h3>
-                <Card className="p-2">
-                    <div className="flex items-center gap-2 text-sm">
-                        <TestTube className="h-5 w-5" />
-                        <span className="font-medium capitalize">{selectedItem.type}</span>
-                        <span className="text-xs text-muted-foreground">({selectedItem.id.slice(-4)})</span>
-                    </div>
-                    {selectedItem.contents && (
-                        <div className="text-xs mt-1 pl-2">
-                            <p>Volume: {selectedItem.contents.volume}ml</p>
-                            <p>Reagent: {selectedItem.contents.reagent?.name || 'None'}</p>
-                        </div>
-                    )}
-                </Card>
-            </div>
-        )}
+        
+				<div className={`p-3 rounded-md border-2 ${selectedItem ? 'bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700' : 'bg-yellow-50 dark:bg-yellow-950 border-yellow-300 dark:border-yellow-700'}`}>
+					<p className={`text-xs font-semibold mb-1 ${selectedItem ? 'text-green-900 dark:text-green-100' : 'text-yellow-900 dark:text-yellow-100'}`}>
+						{selectedItem ? '✓ Equipment Selected' : '⚠ No Equipment Selected'}
+					</p>
+					<p className={`text-sm font-semibold ${selectedItem ? 'text-green-800 dark:text-green-200' : 'text-yellow-800 dark:text-yellow-200'}`}>
+						{selectedItem ? (
+							<>
+								<span className="block">{selectedItem.type.toUpperCase()}</span>
+								{selectedItem.contents && (
+									<>
+										<span className="text-xs mt-1 mr-4">Volume: {selectedItem.contents.volume.toFixed(1)}ml</span>
+									</>
+								)}
+							</>
+						) : (
+							'Select equipment from the workbench.'
+						)}
+					</p>
+				</div>
+
         <Separator />
 
         <div>
