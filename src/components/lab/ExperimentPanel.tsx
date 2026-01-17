@@ -55,8 +55,35 @@ export default function ExperimentPanel({
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
         
+				<div className="flex flex-col min-h-0">
+          <h3 className="font-semibold mb-2 text-lg">Procedure</h3>
+          <ScrollArea className="flex-1 pr-4">
+            <ul className="space-y-3">
+              {experiment.steps.map((step, index) => (
+                <li key={step.id} className="flex items-start gap-3">
+                  <div className={`mt-1 flex-shrink-0 h-5 w-5 rounded-full flex items-center justify-center text-primary-foreground ${index < currentStepIndex ? 'bg-primary' : index === currentStepIndex ? 'bg-primary/70 animate-pulse' : 'bg-muted-foreground/30'}`}>
+                    {index < currentStepIndex ? <CheckCircle className="h-4 w-4" /> : <span className="text-xs font-bold">{index + 1}</span>}
+                  </div>
+                  <span className={`text-sm ${index === currentStepIndex ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>{step.instruction}</span>
+                </li>
+              ))}
+            </ul>
+          </ScrollArea>
+        </div>
+
+        <CardFooter className="flex flex-col sm:flex-row gap-2">
+          <Button variant="outline" onClick={onGetGuidance} className="w-full" disabled={isLoading}>
+            {isLoading ? <Loader className="animate-spin mr-2" /> : <HelpCircle className="mr-2" />} Get Hint
+          </Button>
+          <Button onClick={onAnalyzeCompletion} className="w-full" disabled={isLoading}>
+            {isLoading ? <Loader className="animate-spin mr-2" /> : <FlaskConical className="mr-2" />} Complete
+          </Button>
+        </CardFooter>
+
+        <Separator />
         
-				<div className={`p-3 rounded-md border-2 ${selectedItem ? 'bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700' : 'bg-yellow-50 dark:bg-yellow-950 border-yellow-300 dark:border-yellow-700'}`}>
+        
+        <div className={`p-3 rounded-md border-2 ${selectedItem ? 'bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700' : 'bg-yellow-50 dark:bg-yellow-950 border-yellow-300 dark:border-yellow-700'}`}>
 					<p className={`text-xs font-semibold mb-1 ${selectedItem ? 'text-green-900 dark:text-green-100' : 'text-yellow-900 dark:text-yellow-100'}`}>
 						{selectedItem ? '✓ Equipment Selected' : '⚠ No Equipment Selected'}
 					</p>
@@ -74,12 +101,12 @@ export default function ExperimentPanel({
 							'Select equipment from the workbench.'
 						)}
 					</p>
-				</div>
+				</div>        
 
         <Separator />
 
         <div>
-            <h3 className="font-semibold mb-2 text-sm">Add Reagents</h3>
+            <h3 className="font-semibold mb-2 text-lg">Add Reagents</h3>
             <div className="space-y-2">
                 <Select value={selectedReagentId} onValueChange={setSelectedReagentId}>
                     <SelectTrigger><SelectValue placeholder="Select Reagent" /></SelectTrigger>
@@ -117,23 +144,7 @@ export default function ExperimentPanel({
                 </Button>
             </div>
         </div>
-
-        <Separator />
-        <div className="flex-1 flex flex-col min-h-0">
-          <h3 className="font-semibold mb-2 text-sm">Procedure</h3>
-          <ScrollArea className="flex-1 pr-4">
-            <ul className="space-y-3">
-              {experiment.steps.map((step, index) => (
-                <li key={step.id} className="flex items-start gap-3">
-                  <div className={`mt-1 flex-shrink-0 h-5 w-5 rounded-full flex items-center justify-center text-primary-foreground ${index < currentStepIndex ? 'bg-primary' : index === currentStepIndex ? 'bg-primary/70 animate-pulse' : 'bg-muted-foreground/30'}`}>
-                    {index < currentStepIndex ? <CheckCircle className="h-4 w-4" /> : <span className="text-xs font-bold">{index + 1}</span>}
-                  </div>
-                  <span className={`text-sm ${index === currentStepIndex ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>{step.instruction}</span>
-                </li>
-              ))}
-            </ul>
-          </ScrollArea>
-        </div>
+        
         {aiGuidance && (
           <Alert variant={aiGuidance.isCorrect ? "default" : "destructive"} className="mt-4">
             {aiGuidance.isCorrect ? <Lightbulb className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
@@ -142,14 +153,6 @@ export default function ExperimentPanel({
           </Alert>
         )}
       </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row gap-2">
-        <Button variant="outline" onClick={onGetGuidance} className="w-full" disabled={isLoading}>
-          {isLoading ? <Loader className="animate-spin mr-2" /> : <HelpCircle className="mr-2" />} Get Hint
-        </Button>
-        <Button onClick={onAnalyzeCompletion} className="w-full" disabled={isLoading}>
-          {isLoading ? <Loader className="animate-spin mr-2" /> : <FlaskConical className="mr-2" />} Complete
-        </Button>
-      </CardFooter>
     </Card>
   );
 }
