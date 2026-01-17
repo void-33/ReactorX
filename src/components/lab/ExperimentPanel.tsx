@@ -20,6 +20,7 @@ interface ExperimentPanelProps {
 	onRemoveItem: (itemId: string) => void;
   onGetGuidance: () => void;
   onAnalyzeCompletion: () => void;
+  onDropReagent: () => void;
   aiGuidance: { guidance: string; isCorrect: boolean } | null;
   isLoading: boolean;
 }
@@ -33,6 +34,7 @@ export default function ExperimentPanel({
 	onRemoveItem,
   onGetGuidance,
   onAnalyzeCompletion,
+  onDropReagent,
   aiGuidance,
   isLoading,
 }: ExperimentPanelProps) {
@@ -144,6 +146,16 @@ export default function ExperimentPanel({
                 <Button onClick={handleAddReagent} disabled={!selectedItem || !selectedReagentId || selectedVolume <= 0} className="w-full">
                     Add {selectedVolume}ml
                 </Button>
+                {selectedItem?.type === 'burette' && (
+                  <Button 
+                    onClick={onDropReagent} 
+                    disabled={!selectedItem.contents || selectedItem.contents.volume < 2}
+                    variant="secondary"
+                    className="w-full mt-2"
+                  >
+                    💧 Drop 2ml
+                  </Button>
+                )}
             </div>
         </div>
         

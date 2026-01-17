@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, PanInfo } from 'framer-motion';
 import { sampleExperiment } from '@/lib/experiments';
-import type { LabItem, EquipmentType, Reagent, ExperimentStep } from '@/lib/types';
+import type { LabItem, EquipmentType, Reagent, ExperimentStep, Drop } from '@/lib/types';
 import Header from '@/components/lab/Header';
 import Workbench from '@/components/lab/Workbench';
 import EquipmentPanel from '@/components/lab/EquipmentPanel';
@@ -21,6 +21,7 @@ export default function ChemSimLabPage() {
   const [analysisResult, setAnalysisResult] = useState<{ isExperimentComplete: boolean; completionReason: string } | null>(null);
   const [lastInteractionToast, setLastInteractionToast] = useState<{title: string, description: string, variant?: "default" | "destructive" } | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [drops, setDrops] = useState<Drop[]>([]);
   
   const workbenchRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
@@ -45,6 +46,7 @@ export default function ChemSimLabPage() {
       isSelected: false,
       ...(type === 'beaker' || type === 'flask' || type === 'burette' ? { contents: { reagent: null, volume: 0, color: 'transparent', concentration: 0.1 } } : {}),
       ...(type === 'burner' ? { isHeating: false } : {}),
+      ...(type === 'pipe' ? { rotation: 0 } : {}),
     };
     setLabItems((prev) => [...prev, newItem]);
   };
@@ -55,6 +57,15 @@ export default function ChemSimLabPage() {
       setSelectedItemId(null);
     }
     setLastInteractionToast({ title: "Item Removed", description: "Equipment removed from workbench."});
+  };
+
+  const rotatePipe = (itemId: string) => {
+    setLabItems((prev) => prev.map(item => {
+      if (item.id === itemId && item.type === 'pipe') {
+        return { ...item, rotation: ((item.rotation || 0) + 90) % 360 };
+      }
+      return item;
+    }));
   };
   
   const addReagentToItem = (itemId: string, reagent: Reagent, volume: number, concentration: number) => {
@@ -283,6 +294,91 @@ export default function ChemSimLabPage() {
     setIsLoading(false);
   };
 
+  const handleDropReagent = () => {
+    const selectedItem = labItems.find(item => item.id === selectedItemId);
+    if (!selectedItem || selectedItem.type !== 'burette' || !selectedItem.contents || selectedItem.contents.volume < 2) {
+      setLastInteractionToast({ title: 'Cannot Drop', description: 'Burette must have at least 2ml of reagent.', variant: 'destructive' });
+      return;
+    }
+
+    // Remove 2ml from burette
+    setLabItems(prev => prev.map(item => {
+      if (item.id === selectedItemId && item.contents) {
+        return { ...item, contents: { ...item.contents, volume: item.contents.volume - 2 } };
+      }
+      return item;
+    }));
+
+    // Create a drop at the burette position (bottom of burette)
+    const dropId = `drop-${Date.now()}`;
+    const newDrop: Drop = {
+      id: dropId,
+      position: { x: selectedItem.position.x + 50, y: selectedItem.position.y + 380 }, // Bottom of burette
+      reagent: selectedItem.contents.reagent!,
+      concentration: selectedItem.contents.concentration,
+      color: selectedItem.contents.color
+    };
+
+    setDrops(prev => [...prev, newDrop]);
+
+    // Animate the drop falling
+    const fallInterval = setInterval(() => {
+      setDrops(prevDrops => {
+        const drop = prevDrops.find(d => d.id === dropId);
+        if (!drop) {
+          clearInterval(fallInterval);
+          return prevDrops;
+        }
+
+        // Check collision with flasks
+        let collided = false;
+        labItems.forEach(item => {
+          if (item.type === 'flask' && item.contents) {
+            const itemRef = itemRefs.current.get(item.id);
+            if (itemRef && workbenchRef.current) {
+              const itemRect = itemRef.getBoundingClientRect();
+              const workbenchRect = workbenchRef.current.getBoundingClientRect();
+              
+              // Check if drop position collides with flask's red rect
+              const flaskRedRectX = item.position.x + 65; // bbox.x + 55, approximate
+              const flaskRedRectY = item.position.y + 40; // bbox.y, approximate
+              const flaskRedRectWidth = 45;
+              const flaskRedRectHeight = 160;
+
+              if (
+                drop.position.x >= flaskRedRectX &&
+                drop.position.x <= flaskRedRectX + flaskRedRectWidth &&
+                drop.position.y >= flaskRedRectY &&
+                drop.position.y <= flaskRedRectY + flaskRedRectHeight
+              ) {
+                collided = true;
+                // Add 2ml to flask
+                addReagentToItem(item.id, drop.reagent, 2, drop.concentration);
+                setLastInteractionToast({ title: 'Drop Added', description: `Added 2ml to ${item.type}.` });
+              }
+            }
+          }
+        });
+
+        if (collided) {
+          clearInterval(fallInterval);
+          return prevDrops.filter(d => d.id !== dropId);
+        }
+
+        // Move drop down
+        const updatedDrop = { ...drop, position: { ...drop.position, y: drop.position.y + 5 } };
+        
+        // Remove drop if it falls off screen
+        if (updatedDrop.position.y > 800) {
+          clearInterval(fallInterval);
+          return prevDrops.filter(d => d.id !== dropId);
+        }
+
+        return prevDrops.map(d => d.id === dropId ? updatedDrop : d);
+      });
+    }, 30);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-body">
       <Header onSave={() => console.log(JSON.stringify(labItems))} onReset={handleReset} />
@@ -297,6 +393,7 @@ export default function ChemSimLabPage() {
             onRemoveItem={removeLabItem}
             onGetGuidance={handleGetGuidance}
             onAnalyzeCompletion={handleAnalyzeCompletion}
+            onDropReagent={handleDropReagent}
             aiGuidance={aiGuidance}
             isLoading={isLoading}
           />
@@ -306,10 +403,12 @@ export default function ChemSimLabPage() {
            <Workbench 
               ref={workbenchRef} 
               items={labItems}
+              drops={drops}
               onDragEnd={handleDragEnd}
               onItemClick={handleItemClick}
                onWorkbenchClick={handleWorkbenchClick}
               onRemoveItem={removeLabItem}
+              onRotatePipe={rotatePipe}
               itemRefs={itemRefs}
             />
         </div>

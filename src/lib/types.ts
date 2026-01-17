@@ -17,7 +17,7 @@ export type LiquidContents = {
 	concentration: number;
 };
 
-export type EquipmentType = 'beaker' | 'flask' | 'burner' | 'burette';
+export type EquipmentType = 'beaker' | 'flask' | 'burner' | 'burette'| 'storagetank'|'pipe';
 
 export type LabItem = {
   id: string;
@@ -28,6 +28,7 @@ export type LabItem = {
   isHeating?: boolean;
   isSelected?: boolean;
   isDraggingEnabled?: boolean;
+  rotation?: number;
 };
 
 export type ExperimentStep = {
@@ -42,4 +43,12 @@ export type Experiment = {
   steps: ExperimentStep[];
   reagents: Reagent[];
   expectedResults: string;
+};
+
+export type Drop = {
+  id: string;
+  position: { x: number; y: number };
+  reagent: Reagent;
+  concentration: number;
+  color: string;
 };
