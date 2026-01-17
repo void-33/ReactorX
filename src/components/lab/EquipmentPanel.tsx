@@ -13,7 +13,9 @@ const equipmentList: { type: EquipmentType, name: string, icon: React.ReactNode 
   { type: 'beaker', name: 'Beaker', icon: <Beaker /> },
   { type: 'flask', name: 'Flask', icon: <FlaskRound /> },
   { type: 'burner', name: 'Burner', icon: <Flame /> },
-  { type: 'burette', name: 'Burette', icon: <Droplet /> }
+  { type: 'burette', name: 'Burette', icon: <Droplet /> },
+  {type: 'storagetank', name:'Storage Tank',icon: <Droplet/>},
+  {type: 'pipe', name:'Pipe', icon: <Droplet/>}
 ];
 
 export default function EquipmentPanel({ onAddItem }: EquipmentPanelProps) {
