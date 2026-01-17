@@ -19,7 +19,7 @@ export default function ChemSimLabPage() {
   const [aiGuidance, setAiGuidance] = useState<{ guidance: string; isCorrect: boolean } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<{ isExperimentComplete: boolean; completionReason: string } | null>(null);
-  const [lastInteractionToast, setLastInteractionToast] = useState<{title: string, description: string} | null>(null);
+  const [lastInteractionToast, setLastInteractionToast] = useState<{title: string, description: string, variant?: "default" | "destructive" } | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   
   const workbenchRef = useRef<HTMLDivElement>(null);
@@ -43,22 +43,22 @@ export default function ChemSimLabPage() {
 			chemicals: [],
       isDraggingEnabled: true,
       isSelected: false,
-      ...(type === 'beaker' || type === 'flask' ? { contents: { reagent: null, volume: 0, color: 'transparent' } } : {}),
+      ...(type === 'beaker' || type === 'flask' ? { contents: { reagent: null, volume: 0, color: 'transparent', concentration: 0.1 } } : {}),
       ...(type === 'burner' ? { isHeating: false } : {}),
     };
     setLabItems((prev) => [...prev, newItem]);
   };
   
-  const addReagentToItem = (itemId: string, reagent: Reagent, volume: number) => {
+  const addReagentToItem = (itemId: string, reagent: Reagent, volume: number, concentration: number) => {
     setLabItems(prevItems => prevItems.map(item => {
       if (item.id === itemId && item.contents) {
         // if(item.contents.volume > 0 && item.contents.reagent?.id !== reagent.id) {
         //     setLastInteractionToast({ title: 'Mixing not implemented', description: 'This simulation does not support mixing different reagents yet.', variant: 'destructive'});
         //     return item;
         // }
-				const finalChemicals = [...item.chemicals, { reagent, volume }];
+				const finalChemicals = [...item.chemicals, { reagent, volume, concentration }];
         const newVolume = item.contents.volume + volume;
-        return { ...item, contents: { reagent, volume: newVolume, color: reagent.color }, chemicals: finalChemicals };
+        return { ...item, contents: { reagent, volume: newVolume, color: reagent.color, concentration }, chemicals: finalChemicals };
       }
       return item;
     }));

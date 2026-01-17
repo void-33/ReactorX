@@ -16,7 +16,7 @@ interface ExperimentPanelProps {
   currentStepIndex: number;
   items: LabItem[];
   selectedItem: LabItem | null;
-  onAddReagent: (itemId: string, reagent: Reagent, volume: number) => void;
+  onAddReagent: (itemId: string, reagent: Reagent, volume: number, concentration: number) => void;
   onGetGuidance: () => void;
   onAnalyzeCompletion: () => void;
   aiGuidance: { guidance: string; isCorrect: boolean } | null;
@@ -36,13 +36,14 @@ export default function ExperimentPanel({
 }: ExperimentPanelProps) {
   const [selectedReagentId, setSelectedReagentId] = useState<string>('');
   const [selectedVolume, setSelectedVolume] = useState<number>(50);
+  const [selectedConcentration, setSelectedConcentration] = useState<number>(0.1);
 
   const containerItems = items.filter(item => item.contents);
   const selectedReagent = experiment.reagents.find(r => r.id === selectedReagentId);
 
   const handleAddReagent = () => {
     if (selectedItem && selectedReagent) {
-      onAddReagent(selectedItem.id, selectedReagent, selectedVolume);
+      onAddReagent(selectedItem.id, selectedReagent, selectedVolume, selectedConcentration);
     }
   };
 
@@ -98,6 +99,17 @@ export default function ExperimentPanel({
                       className="w-full"
                   />
                   <span>ml</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                      type="number"
+                      placeholder="Concentration (M)"
+                      value={selectedConcentration}
+                      onChange={(e) => setSelectedConcentration(Number(e.target.value))}
+                      min="0.1"
+                      className="w-full"
+                  />
+                  <span>M</span>
                 </div>
                 
                 <Button onClick={handleAddReagent} disabled={!selectedItem || !selectedReagentId || selectedVolume <= 0} className="w-full">
