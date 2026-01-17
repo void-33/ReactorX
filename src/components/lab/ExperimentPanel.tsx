@@ -1,19 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle, HelpCircle, Lightbulb, Loader, FlaskConical, AlertCircle } from 'lucide-react';
+import { CheckCircle, HelpCircle, Lightbulb, Loader, FlaskConical, AlertCircle, TestTube } from 'lucide-react';
 import type { Experiment, LabItem, Reagent } from '@/lib/types';
 
 interface ExperimentPanelProps {
   experiment: Experiment;
   currentStepIndex: number;
   items: LabItem[];
+  selectedItem: LabItem | null;
   onAddReagent: (itemId: string, reagent: Reagent, volume: number) => void;
   onGetGuidance: () => void;
   onAnalyzeCompletion: () => void;
@@ -25,21 +26,21 @@ export default function ExperimentPanel({
   experiment,
   currentStepIndex,
   items,
+  selectedItem,
   onAddReagent,
   onGetGuidance,
   onAnalyzeCompletion,
   aiGuidance,
   isLoading,
 }: ExperimentPanelProps) {
-  const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [selectedReagentId, setSelectedReagentId] = useState<string>('');
 
   const containerItems = items.filter(item => item.contents);
   const selectedReagent = experiment.reagents.find(r => r.id === selectedReagentId);
 
   const handleAddReagent = () => {
-    if (selectedItemId && selectedReagent) {
-      onAddReagent(selectedItemId, selectedReagent, 50); // Add 50ml by default
+    if (selectedItem && selectedReagent) {
+      onAddReagent(selectedItem.id, selectedReagent, 50); // Add 50ml by default
     }
   };
 
@@ -50,17 +51,30 @@ export default function ExperimentPanel({
         <CardDescription>{experiment.description}</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
+        
+        {selectedItem && (
+            <div>
+                <h3 className="font-semibold mb-2 text-sm">Selected Item</h3>
+                <Card className="p-2">
+                    <div className="flex items-center gap-2 text-sm">
+                        <TestTube className="h-5 w-5" />
+                        <span className="font-medium capitalize">{selectedItem.type}</span>
+                        <span className="text-xs text-muted-foreground">({selectedItem.id.slice(-4)})</span>
+                    </div>
+                    {selectedItem.contents && (
+                        <div className="text-xs mt-1 pl-2">
+                            <p>Volume: {selectedItem.contents.volume}ml</p>
+                            <p>Reagent: {selectedItem.contents.reagent?.name || 'None'}</p>
+                        </div>
+                    )}
+                </Card>
+            </div>
+        )}
+        <Separator />
+
         <div>
             <h3 className="font-semibold mb-2 text-sm">Add Reagents</h3>
             <div className="space-y-2">
-                <Select value={selectedItemId} onValueChange={setSelectedItemId}>
-                    <SelectTrigger><SelectValue placeholder="Select Container" /></SelectTrigger>
-                    <SelectContent>
-                        {containerItems.length > 0 ? containerItems.map(item => (
-                            <SelectItem key={item.id} value={item.id}>{item.type} ({item.id.slice(-4)})</SelectItem>
-                        )) : <SelectItem value="none" disabled>No containers</SelectItem>}
-                    </SelectContent>
-                </Select>
                 <Select value={selectedReagentId} onValueChange={setSelectedReagentId}>
                     <SelectTrigger><SelectValue placeholder="Select Reagent" /></SelectTrigger>
                     <SelectContent>
@@ -69,9 +83,10 @@ export default function ExperimentPanel({
                         ))}
                     </SelectContent>
                 </Select>
-                <Button onClick={handleAddReagent} disabled={!selectedItemId || !selectedReagentId} className="w-full">Add 50ml</Button>
+                <Button onClick={handleAddReagent} disabled={!selectedItem || !selectedReagentId} className="w-full">Add 50ml</Button>
             </div>
         </div>
+
         <Separator />
         <div className="flex-1 flex flex-col min-h-0">
           <h3 className="font-semibold mb-2 text-sm">Procedure</h3>

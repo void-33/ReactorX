@@ -24,6 +24,8 @@ export type LabItem = {
   contents?: LiquidContents;
 	chemicals: Liquid[];
   isHeating?: boolean;
+  isSelected?: boolean;
+  isDraggingEnabled?: boolean;
 };
 
 export type ExperimentStep = {

@@ -20,9 +20,12 @@ export default function ChemSimLabPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<{ isExperimentComplete: boolean; completionReason: string } | null>(null);
   const [lastInteractionToast, setLastInteractionToast] = useState<{title: string, description: string} | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   
   const workbenchRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastClickTimeRef = useRef<number>(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -38,6 +41,8 @@ export default function ChemSimLabPage() {
       type,
       position: { x: 200, y: 200 },
 			chemicals: [],
+      isDraggingEnabled: true,
+      isSelected: false,
       ...(type === 'beaker' || type === 'flask' ? { contents: { reagent: null, volume: 0, color: 'transparent' } } : {}),
       ...(type === 'burner' ? { isHeating: false } : {}),
     };
@@ -64,6 +69,34 @@ export default function ChemSimLabPage() {
     setLabItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, position: { x, y } } : item))
     );
+  };
+
+  const handleItemClick = (itemId: string) => {
+    const now = Date.now();
+    const timeSinceLastClick = now - lastClickTimeRef.current;
+
+    if (timeSinceLastClick < 300) {
+      // Double click - disable dragging temporarily for precision selection
+      if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+      setLabItems((prev) =>
+        prev.map((item) => 
+          item.id === itemId ? { ...item, isDraggingEnabled: false } : item
+        )
+      );
+      lastClickTimeRef.current = 0;
+    } else {
+      // Single click - select equipment
+      if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+      
+      clickTimeoutRef.current = setTimeout(() => {
+        setSelectedItemId(itemId);
+        setLabItems((prev) =>
+          prev.map((item) => ({ ...item, isSelected: item.id === itemId }))
+        );
+      }, 300);
+      
+      lastClickTimeRef.current = now;
+    }
   };
 
   const handleDragEnd = (id: string, info: PanInfo) => {
@@ -218,6 +251,7 @@ export default function ChemSimLabPage() {
               ref={workbenchRef} 
               items={labItems}
               onDragEnd={handleDragEnd}
+              onItemClick={handleItemClick}
               itemRefs={itemRefs}
             />
         </div>
@@ -227,6 +261,7 @@ export default function ChemSimLabPage() {
             experiment={sampleExperiment}
             currentStepIndex={currentStepIndex}
             items={labItems}
+            selectedItem={labItems.find(item => item.id === selectedItemId) || null}
             onAddReagent={addReagentToItem}
             onGetGuidance={handleGetGuidance}
             onAnalyzeCompletion={handleAnalyzeCompletion}
