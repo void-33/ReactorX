@@ -17,7 +17,7 @@ export type LiquidContents = {
 	concentration: number;
 };
 
-export type EquipmentType = 'beaker' | 'flask' | 'burner';
+export type EquipmentType = 'beaker' | 'flask' | 'burner' | 'burette';
 
 export type LabItem = {
   id: string;
