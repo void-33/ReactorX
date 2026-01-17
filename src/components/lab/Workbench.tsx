@@ -10,6 +10,7 @@ import Burner from './equipment/Burner';
 interface WorkbenchProps {
   items: LabItem[];
   onDragEnd: (id: string, info: PanInfo) => void;
+  onItemClick: (id: string) => void;
   itemRefs: React.MutableRefObject<Map<string, HTMLDivElement | null>>;
 }
 
@@ -20,7 +21,7 @@ const equipmentMap = {
 };
 
 const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
-  ({ items, onDragEnd, itemRefs }, ref) => {
+  ({ items, onDragEnd, onItemClick, itemRefs }, ref) => {
     return (
       <div
         ref={ref}
@@ -32,13 +33,16 @@ const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
             <motion.div
               key={item.id}
               ref={(el) => itemRefs.current.set(item.id, el)}
-              drag
+              drag={item.isDraggingEnabled ?? true}
               dragMomentum={false}
               onDragEnd={(_, info) => onDragEnd(item.id, info)}
+              onClick={() => onItemClick(item.id)}
               initial={{ x: item.position.x, y: item.position.y }}
               animate={{ x: item.position.x, y: item.position.y }}
               transition={{ type: 'spring', stiffness: 500, damping: 50 }}
-              className="absolute cursor-grab active:cursor-grabbing z-10"
+              className={`absolute z-10 ${
+                item.isDraggingEnabled !== false ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+              } ${item.isSelected ? 'ring-2 ring-primary ring-offset-2' : ''}`}
               whileDrag={{ scale: 1.1, zIndex: 20 }}
             >
               <EquipmentComponent {...item} />
