@@ -43,7 +43,7 @@ export default function ChemSimLabPage() {
 			chemicals: [],
       isDraggingEnabled: true,
       isSelected: false,
-      ...(type === 'beaker' || type === 'flask' ? { contents: { reagent: null, volume: 0, color: 'transparent', concentration: 0.1 } } : {}),
+      ...(type === 'beaker' || type === 'flask' || type === 'burette' ? { contents: { reagent: null, volume: 0, color: 'transparent', concentration: 0.1 } } : {}),
       ...(type === 'burner' ? { isHeating: false } : {}),
     };
     setLabItems((prev) => [...prev, newItem]);
