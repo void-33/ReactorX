@@ -3,7 +3,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { EquipmentType } from "@/lib/types";
-import { Beaker, FlaskRound, Flame } from "lucide-react";
+import { Beaker, FlaskRound, Flame,TestTube } from "lucide-react";
 
 interface EquipmentPanelProps {
   onAddItem: (type: EquipmentType) => void;
@@ -13,6 +13,7 @@ const equipmentList: { type: EquipmentType, name: string, icon: React.ReactNode 
   { type: 'beaker', name: 'Beaker', icon: <Beaker /> },
   { type: 'flask', name: 'Flask', icon: <FlaskRound /> },
   { type: 'burner', name: 'Burner', icon: <Flame /> },
+  { type: 'testtube', name: 'Test Tube', icon: <TestTube /> },
 ];
 
 export default function EquipmentPanel({ onAddItem }: EquipmentPanelProps) {

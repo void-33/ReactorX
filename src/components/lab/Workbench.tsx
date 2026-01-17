@@ -7,7 +7,7 @@ import Beaker from './equipment/Beaker';
 import Flask from './equipment/Flask';
 import Burner from './equipment/Burner';
 import { X } from 'lucide-react';
-
+import TestTube from './equipment/TestTube';
 interface WorkbenchProps {
   items: LabItem[];
   onDragEnd: (id: string, info: PanInfo) => void;
@@ -21,6 +21,7 @@ const equipmentMap = {
   beaker: Beaker,
   flask: Flask,
   burner: Burner,
+  testtube:TestTube,
 };
 
 const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
