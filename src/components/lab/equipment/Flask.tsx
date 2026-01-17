@@ -10,8 +10,7 @@ export default function Flask({ contents, isHeating }: LabItem) {
   const MAX_VOLUME = 250;
 
   const content_volume = Math.min((contents?.volume || 0), MAX_VOLUME);
-  // const fillRatio = content_volume / MAX_VOLUME;
-  const fillRatio = 1.0;
+  const fillRatio = content_volume / MAX_VOLUME;
 
 
   const [bbox, setBBox] = useState({ x: 0, y: 0, width: 0, height: 0 });
