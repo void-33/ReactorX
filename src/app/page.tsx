@@ -135,6 +135,15 @@ export default function ChemSimLabPage() {
     }
   };
 
+  const handleWorkbenchClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      setSelectedItemId(null);
+      setLabItems((prev) =>
+        prev.map((item) => ({ ...item, isSelected: false }))
+      );
+    }
+  };
+
   const handleDragEnd = (id: string, info: PanInfo) => {
     const draggedItem = labItems.find(item => item.id === id);
     if (!draggedItem) return;
@@ -299,6 +308,7 @@ export default function ChemSimLabPage() {
               items={labItems}
               onDragEnd={handleDragEnd}
               onItemClick={handleItemClick}
+               onWorkbenchClick={handleWorkbenchClick}
               onRemoveItem={removeLabItem}
               itemRefs={itemRefs}
             />
