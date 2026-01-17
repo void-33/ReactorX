@@ -7,12 +7,14 @@ export type Reagent = {
 export type Liquid = {
 	reagent: Reagent;
 	volume: number;
+	concentration: number;
 };
 
 export type LiquidContents = {
   reagent: Reagent | null;
   volume: number; // in ml
   color: string;
+	concentration: number;
 };
 
 export type EquipmentType = 'beaker' | 'flask' | 'burner';
