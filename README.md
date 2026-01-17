@@ -10,7 +10,7 @@ Virtual Chemistry Lab is an interactive simulation app that allows users to expl
 # Setup and Installation
 ```bash
 git clone https://github.com/void-33/TechSprint_Infinite
-cd virtual-chemistry-lab
+cd TechSprint_Infinite
 npm install
 npm run dev
 ```
