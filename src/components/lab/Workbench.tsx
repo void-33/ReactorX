@@ -12,8 +12,9 @@ interface WorkbenchProps {
   items: LabItem[];
   onDragEnd: (id: string, info: PanInfo) => void;
   onItemClick: (id: string) => void;
+  onWorkbenchClick: (event: React.MouseEvent<HTMLDivElement>) => void;
   onRemoveItem: (id: string) => void;
-  itemRefs: React.MutableRefObject<Map<string, HTMLDivElement | null>>;
+  itemRefs: React.MutableRefObject<Map<string, HTMLDivElement | null>>; 
 }
 
 const equipmentMap = {
@@ -23,10 +24,11 @@ const equipmentMap = {
 };
 
 const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
-  ({ items, onDragEnd, onItemClick, onRemoveItem, itemRefs }, ref) => {
+  ({ items, onDragEnd, onItemClick, onWorkbenchClick, onRemoveItem, itemRefs }, ref) => {
     return (
       <div
         ref={ref}
+        onClick={onWorkbenchClick}
         className="w-full h-full bg-muted/50 rounded-lg border border-dashed relative overflow-hidden shadow-inner"
       >
         {items.map((item) => {
@@ -38,7 +40,10 @@ const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
               drag={item.isDraggingEnabled ?? true}
               dragMomentum={false}
               onDragEnd={(_, info) => onDragEnd(item.id, info)}
-              onClick={() => onItemClick(item.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onItemClick(item.id);
+              }}
               initial={{ x: item.position.x, y: item.position.y }}
               animate={{ x: item.position.x, y: item.position.y }}
               transition={{ type: 'spring', stiffness: 500, damping: 50 }}
