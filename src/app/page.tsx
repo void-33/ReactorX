@@ -41,6 +41,138 @@ const ELBOW_TANK_SNAP_CONFIG_ROTATION_90 = {
 	microAdjustY: 0, // Additional vertical adjustment
 };
 
+// === COMPRESSOR SNAPPING CONFIGS ===
+// Configuration for elbow rotation 0 (outlets at bottom and right) snapping to compressor
+const ELBOW_COMPRESSOR_SNAP_CONFIG_ROTATION_0 = {
+	snapDistance: 200,
+	compressorOffsetX: 0, // Horizontal offset from Compressor left edge to snap point
+	compressorOffsetY: 0, // Vertical offset from Compressor top edge
+	microAdjustX: 215, // Additional horizontal adjustment
+	microAdjustY: -50, // Additional vertical adjustment
+};
+
+// Configuration for elbow rotation 90 (outlets at bottom and left) snapping to compressor
+const ELBOW_COMPRESSOR_SNAP_CONFIG_ROTATION_90 = {
+	snapDistance: 200,
+	compressorOffsetX: 0,
+	compressorOffsetY: 0,
+	microAdjustX: 110,
+	microAdjustY: -35,
+};
+
+// === REVERSE: COMPRESSOR TO ELBOW SNAPPING CONFIGS ===
+// When compressor is dragged to elbow (rotation 0)
+const COMPRESSOR_TO_ELBOW_SNAP_CONFIG_ROTATION_0 = {
+	snapDistance: 200,
+	compressorOffsetX: 0,
+	compressorOffsetY: 0,
+	microAdjustX: 215,
+	microAdjustY: -50,
+};
+
+// When compressor is dragged to elbow (rotation 90)
+const COMPRESSOR_TO_ELBOW_SNAP_CONFIG_ROTATION_90 = {
+	snapDistance: 200,
+	compressorOffsetX: 0,
+	compressorOffsetY: 0,
+	microAdjustX: 110,
+	microAdjustY: -35,
+};
+
+// === PIPE TO COMPRESSOR SNAPPING CONFIGS ===
+// Configuration for pipe rotation 90 snapping to compressor
+const PIPE_COMPRESSOR_SNAP_CONFIG_ROTATION_90 = {
+	snapDistance: 200,
+	compressorOffsetX: 510,
+	compressorOffsetY: 200,
+	microAdjustX: 0,
+	microAdjustY: 0,
+};
+
+// === REVERSE: COMPRESSOR TO PIPE SNAPPING CONFIGS ===
+// When compressor is dragged to pipe (rotation 90)
+const COMPRESSOR_TO_PIPE_SNAP_CONFIG_ROTATION_90 = {
+	snapDistance: 200,
+	compressorOffsetX: 510,
+	compressorOffsetY: 200,
+	microAdjustX: 0,
+	microAdjustY: 0,
+};
+
+// === REACTOR SNAPPING CONFIGS ===
+// Configuration for elbow rotation 0 (outlets at bottom and right) snapping to reactor
+const ELBOW_REACTOR_SNAP_CONFIG_ROTATION_0 = {
+	snapDistance: 200,
+	reactorOffsetX: 118,
+	reactorOffsetY: -85,
+	microAdjustX: 0,
+	microAdjustY: 0,
+};
+
+// Configuration for elbow rotation 90 (outlets at bottom and left) snapping to reactor
+const ELBOW_REACTOR_SNAP_CONFIG_ROTATION_90 = {
+	snapDistance: 200,
+	reactorOffsetX: 18,
+	reactorOffsetY: -75,
+	microAdjustX: 0,
+	microAdjustY: 0,
+};
+
+// Configuration for elbow rotation 180 (outlets at top and left) snapping to reactor
+const ELBOW_REACTOR_SNAP_CONFIG_ROTATION_180 = {
+	snapDistance: 200,
+	reactorOffsetX: 5,
+	reactorOffsetY: 310,
+	microAdjustX: 0,
+	microAdjustY: 0,
+};
+
+// Configuration for elbow rotation 270 (outlets at top and right) snapping to reactor
+const ELBOW_REACTOR_SNAP_CONFIG_ROTATION_270 = {
+	snapDistance: 200,
+	reactorOffsetX: 105,
+	reactorOffsetY: 295,
+	microAdjustX: 0,
+	microAdjustY: 0,
+};
+
+// === REVERSE: REACTOR TO ELBOW SNAPPING CONFIGS ===
+// When reactor is dragged to elbow (rotation 0)
+const REACTOR_TO_ELBOW_SNAP_CONFIG_ROTATION_0 = {
+	snapDistance: 200,
+	reactorOffsetX: 118,
+	reactorOffsetY: -85,
+	microAdjustX: 0,
+	microAdjustY: 0,
+};
+
+// When reactor is dragged to elbow (rotation 90)
+const REACTOR_TO_ELBOW_SNAP_CONFIG_ROTATION_90 = {
+	snapDistance: 200,
+	reactorOffsetX: 18,
+	reactorOffsetY: -75,
+	microAdjustX: 0,
+	microAdjustY: 0,
+};
+
+// When reactor is dragged to elbow (rotation 180)
+const REACTOR_TO_ELBOW_SNAP_CONFIG_ROTATION_180 = {
+	snapDistance: 200,
+	reactorOffsetX: 5,
+	reactorOffsetY: 310,
+	microAdjustX: 0,
+	microAdjustY: 0,
+};
+
+// When reactor is dragged to elbow (rotation 270)
+const REACTOR_TO_ELBOW_SNAP_CONFIG_ROTATION_270 = {
+	snapDistance: 200,
+	reactorOffsetX: 105,
+	reactorOffsetY: 295,
+	microAdjustX: 0,
+	microAdjustY: 0,
+};
+
 // === PIPE SNAPPING CONFIGS ===
 // Bounding box dimensions for collision detection
 const ELBOW_BBOX = { width: 120, height: 120 }; // Elbow bounding box size
@@ -569,6 +701,260 @@ export default function ChemSimLabPage() {
 					setLastInteractionToast({
 						title: "Tank Connected",
 						description: "Storage tank attached to elbow."
+					});
+					break;
+				}
+			}
+		}
+
+		// Check for elbow snapping to compressor (only for rotation 0 and 90)
+		if (draggedItem.type === 'elbow' && (draggedItem.rotation === 0 || draggedItem.rotation === 90)) {
+			const compressor = labItems.find(item => item.type === 'compressor');
+			if (compressor) {
+				const compressorRef = itemRefs.current.get(compressor.id);
+				if (compressorRef && workbenchRef.current) {
+					// Select the appropriate config based on elbow rotation
+					const ELBOW_SNAP_CONFIG = draggedItem.rotation === 90
+						? ELBOW_COMPRESSOR_SNAP_CONFIG_ROTATION_90
+						: ELBOW_COMPRESSOR_SNAP_CONFIG_ROTATION_0;
+
+					// Calculate compressor's snap point position
+					const compressorSnapX = compressor.position.x + ELBOW_SNAP_CONFIG.compressorOffsetX;
+					const compressorSnapY = compressor.position.y + ELBOW_SNAP_CONFIG.compressorOffsetY;
+
+					// Calculate distance between elbow center and compressor snap point
+					const elbowCenterX = finalX + 60; // Approximate elbow center
+					const elbowCenterY = finalY + 60;
+					const distance = Math.sqrt(
+						Math.pow(elbowCenterX - compressorSnapX, 2) +
+						Math.pow(elbowCenterY - compressorSnapY, 2)
+					);
+
+					// Snap if within threshold
+					if (distance < ELBOW_SNAP_CONFIG.snapDistance) {
+						finalX = compressorSnapX - 60 + ELBOW_SNAP_CONFIG.microAdjustX; // Center elbow on snap point
+						finalY = compressorSnapY - 60 + ELBOW_SNAP_CONFIG.microAdjustY;
+						
+						connectPairAdd(draggedItem.id, compressor.id);
+						setLastInteractionToast({
+							title: "Elbow Snapped",
+							description: "Elbow attached to compressor."
+						});
+					}
+				}
+			}
+		}
+
+		// Check for compressor snapping to elbow (only for rotation 0 and 90)
+		if (draggedItem.type === 'compressor') {
+			const compatibleElbows = labItems.filter(item => 
+				item.type === 'elbow' && 
+				(item.rotation === 0 || item.rotation === 90) &&
+				!group.has(item.id)
+			);
+
+			for (const elbow of compatibleElbows) {
+				const ELBOW_SNAP_CONFIG = elbow.rotation === 90
+					? COMPRESSOR_TO_ELBOW_SNAP_CONFIG_ROTATION_90
+					: COMPRESSOR_TO_ELBOW_SNAP_CONFIG_ROTATION_0;
+
+				// Target Compressor Position calc derived from Elbow->Compressor logic
+				const targetCompressorX = elbow.position.x - ELBOW_SNAP_CONFIG.microAdjustX + 60 - ELBOW_SNAP_CONFIG.compressorOffsetX;
+				const targetCompressorY = elbow.position.y - ELBOW_SNAP_CONFIG.microAdjustY + 60 - ELBOW_SNAP_CONFIG.compressorOffsetY;
+
+				// Connection point on Compressor (at current dragged position)
+				const currentCompressorSnapX = finalX + ELBOW_SNAP_CONFIG.compressorOffsetX;
+				const currentCompressorSnapY = finalY + ELBOW_SNAP_CONFIG.compressorOffsetY;
+				
+				// Connection point on Elbow
+				const elbowCenterX = elbow.position.x + 60;
+				const elbowCenterY = elbow.position.y + 60;
+				
+				const distance = Math.hypot(currentCompressorSnapX - elbowCenterX, currentCompressorSnapY - elbowCenterY);
+				
+				if (distance < ELBOW_SNAP_CONFIG.snapDistance) {
+					finalX = targetCompressorX;
+					finalY = targetCompressorY;
+					
+					connectPairAdd(draggedItem.id, elbow.id);
+					setLastInteractionToast({
+						title: "Compressor Connected",
+						description: "Compressor attached to elbow."
+					});
+					break;
+				}
+			}
+		}
+
+		// Check for pipe snapping to compressor (only for pipe rotation 90)
+		if (draggedItem.type === 'pipe' && draggedItem.rotation === 90) {
+			const compressor = labItems.find(item => item.type === 'compressor');
+			if (compressor) {
+				const compressorRef = itemRefs.current.get(compressor.id);
+				if (compressorRef && workbenchRef.current) {
+					const PIPE_SNAP_CONFIG = PIPE_COMPRESSOR_SNAP_CONFIG_ROTATION_90;
+
+					// Calculate compressor's snap point position
+					const compressorSnapX = compressor.position.x + PIPE_SNAP_CONFIG.compressorOffsetX;
+					const compressorSnapY = compressor.position.y + PIPE_SNAP_CONFIG.compressorOffsetY;
+
+					// Calculate distance between pipe center and compressor snap point
+					const pipeCenterX = finalX + 100; // Approximate pipe center
+					const pipeCenterY = finalY + 100;
+					const distance = Math.sqrt(
+						Math.pow(pipeCenterX - compressorSnapX, 2) +
+						Math.pow(pipeCenterY - compressorSnapY, 2)
+					);
+
+					// Snap if within threshold
+					if (distance < PIPE_SNAP_CONFIG.snapDistance) {
+						finalX = compressorSnapX - 100 + PIPE_SNAP_CONFIG.microAdjustX; // Center pipe on snap point
+						finalY = compressorSnapY - 100 + PIPE_SNAP_CONFIG.microAdjustY;
+						
+						connectPairAdd(draggedItem.id, compressor.id);
+						setLastInteractionToast({
+							title: "Pipe Snapped",
+							description: "Pipe attached to compressor."
+						});
+					}
+				}
+			}
+		}
+
+		// Check for compressor snapping to pipe (only for pipe rotation 90)
+		if (draggedItem.type === 'compressor') {
+			const compatiblePipes = labItems.filter(item => 
+				item.type === 'pipe' && 
+				item.rotation === 90 &&
+				!group.has(item.id)
+			);
+
+			for (const pipe of compatiblePipes) {
+				const PIPE_SNAP_CONFIG = COMPRESSOR_TO_PIPE_SNAP_CONFIG_ROTATION_90;
+
+				// Target Compressor Position calc derived from Pipe->Compressor logic
+				const targetCompressorX = pipe.position.x - PIPE_SNAP_CONFIG.microAdjustX + 100 - PIPE_SNAP_CONFIG.compressorOffsetX;
+				const targetCompressorY = pipe.position.y - PIPE_SNAP_CONFIG.microAdjustY + 100 - PIPE_SNAP_CONFIG.compressorOffsetY;
+
+				// Connection point on Compressor (at current dragged position)
+				const currentCompressorSnapX = finalX + PIPE_SNAP_CONFIG.compressorOffsetX;
+				const currentCompressorSnapY = finalY + PIPE_SNAP_CONFIG.compressorOffsetY;
+				
+				// Connection point on Pipe
+				const pipeCenterX = pipe.position.x + 100;
+				const pipeCenterY = pipe.position.y + 100;
+				
+				const distance = Math.hypot(currentCompressorSnapX - pipeCenterX, currentCompressorSnapY - pipeCenterY);
+				
+				if (distance < PIPE_SNAP_CONFIG.snapDistance) {
+					finalX = targetCompressorX;
+					finalY = targetCompressorY;
+					
+					connectPairAdd(draggedItem.id, pipe.id);
+					setLastInteractionToast({
+						title: "Compressor Connected",
+						description: "Compressor attached to pipe."
+					});
+					break;
+				}
+			}
+		}
+
+		// Check for elbow snapping to reactor (for all rotations: 0, 90, 180, 270)
+		if (draggedItem.type === 'elbow') {
+			const reactor = labItems.find(item => item.type === 'reactor');
+			if (reactor) {
+				const reactorRef = itemRefs.current.get(reactor.id);
+				if (reactorRef && workbenchRef.current) {
+					// Select config based on elbow rotation
+					let ELBOW_SNAP_CONFIG;
+					switch (draggedItem.rotation) {
+						case 90:
+							ELBOW_SNAP_CONFIG = ELBOW_REACTOR_SNAP_CONFIG_ROTATION_90;
+							break;
+						case 180:
+							ELBOW_SNAP_CONFIG = ELBOW_REACTOR_SNAP_CONFIG_ROTATION_180;
+							break;
+						case 270:
+							ELBOW_SNAP_CONFIG = ELBOW_REACTOR_SNAP_CONFIG_ROTATION_270;
+							break;
+						default:
+							ELBOW_SNAP_CONFIG = ELBOW_REACTOR_SNAP_CONFIG_ROTATION_0;
+					}
+
+					// Calculate reactor's snap point position
+					const reactorSnapX = reactor.position.x + ELBOW_SNAP_CONFIG.reactorOffsetX;
+					const reactorSnapY = reactor.position.y + ELBOW_SNAP_CONFIG.reactorOffsetY;
+
+					// Calculate distance between elbow center and reactor snap point
+					const elbowCenterX = finalX + 60; // Approximate elbow center
+					const elbowCenterY = finalY + 60;
+					const distance = Math.sqrt(
+						Math.pow(elbowCenterX - reactorSnapX, 2) +
+						Math.pow(elbowCenterY - reactorSnapY, 2)
+					);
+
+					// Snap if within threshold
+					if (distance < ELBOW_SNAP_CONFIG.snapDistance) {
+						finalX = reactorSnapX - 60 + ELBOW_SNAP_CONFIG.microAdjustX; // Center elbow on snap point
+						finalY = reactorSnapY - 60 + ELBOW_SNAP_CONFIG.microAdjustY;
+						
+						connectPairAdd(draggedItem.id, reactor.id);
+						setLastInteractionToast({
+							title: "Elbow Snapped",
+							description: `Elbow(${draggedItem.rotation}°) attached to reactor.`
+						});
+					}
+				}
+			}
+		}
+
+		// Check for reactor snapping to elbow (for all rotations: 0, 90, 180, 270)
+		if (draggedItem.type === 'reactor') {
+			const compatibleElbows = labItems.filter(item => 
+				item.type === 'elbow' &&
+				!group.has(item.id)
+			);
+
+			for (const elbow of compatibleElbows) {
+				// Select config based on elbow rotation
+				let ELBOW_SNAP_CONFIG;
+				switch (elbow.rotation) {
+					case 90:
+						ELBOW_SNAP_CONFIG = REACTOR_TO_ELBOW_SNAP_CONFIG_ROTATION_90;
+						break;
+					case 180:
+						ELBOW_SNAP_CONFIG = REACTOR_TO_ELBOW_SNAP_CONFIG_ROTATION_180;
+						break;
+					case 270:
+						ELBOW_SNAP_CONFIG = REACTOR_TO_ELBOW_SNAP_CONFIG_ROTATION_270;
+						break;
+					default:
+						ELBOW_SNAP_CONFIG = REACTOR_TO_ELBOW_SNAP_CONFIG_ROTATION_0;
+				}
+
+				// Target Reactor Position calc derived from Elbow->Reactor logic
+				const targetReactorX = elbow.position.x - ELBOW_SNAP_CONFIG.microAdjustX + 60 - ELBOW_SNAP_CONFIG.reactorOffsetX;
+				const targetReactorY = elbow.position.y - ELBOW_SNAP_CONFIG.microAdjustY + 60 - ELBOW_SNAP_CONFIG.reactorOffsetY;
+
+				// Connection point on Reactor (at current dragged position)
+				const currentReactorSnapX = finalX + ELBOW_SNAP_CONFIG.reactorOffsetX;
+				const currentReactorSnapY = finalY + ELBOW_SNAP_CONFIG.reactorOffsetY;
+				
+				// Connection point on Elbow
+				const elbowCenterX = elbow.position.x + 60;
+				const elbowCenterY = elbow.position.y + 60;
+				
+				const distance = Math.hypot(currentReactorSnapX - elbowCenterX, currentReactorSnapY - elbowCenterY);
+				
+				if (distance < ELBOW_SNAP_CONFIG.snapDistance) {
+					finalX = targetReactorX;
+					finalY = targetReactorY;
+					
+					connectPairAdd(draggedItem.id, elbow.id);
+					setLastInteractionToast({
+						title: "Reactor Connected",
+						description: `Reactor attached to elbow(${elbow.rotation}°).`
 					});
 					break;
 				}
