@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, PanInfo, useMotionValue, MotionValue, motionValue } from 'framer-motion';
 import { sampleExperiment } from '@/lib/experiments';
-import type { LabItem, EquipmentType, Reagent, ExperimentStep, Drop } from '@/lib/types';
+import type { LabItem, EquipmentType, Reagent, ExperimentStep, Drop, IngestResult, UserAction } from '@/lib/types';
 import Header from '@/components/lab/Header';
 import Workbench from '@/components/lab/Workbench';
 import EquipmentPanel from '@/components/lab/EquipmentPanel';
@@ -11,6 +11,13 @@ import ExperimentPanel from '@/components/lab/ExperimentPanel';
 import { getGuidance, analyzeCompletion } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import AnalysisDialog from '@/components/lab/AnalysisDialog';
+
+import { sampleExperiments } from '@/lib/listedexperiments';
+import { useSearchParams } from "next/navigation";
+import { initializeCompletionState } from '@/procedures/initializeCompletionState';
+import { triggerCompletionEvents } from '@/procedures/triggerCompletionEvents';
+import { useProcedure } from '@/context/ProcedureContext';
+import { ingestUserAction } from '@/procedures/ingestUserAction';
 
 // Elbow snapping configuration - adjust these for fine-tuning
 // === STORAGE TANK SNAPPING CONFIGS ===
@@ -80,6 +87,37 @@ export default function ChemSimLabPage() {
 	// Track snapped connections: key is item ID, value is Set of connected item IDs
 	const [snappedConnections, setSnappedConnections] = useState<Map<string, Set<string>>>(new Map());
 
+  const searchParams = useSearchParams(); // for ?id=1
+  const {
+    guided,
+    setGuided,
+    procedure,
+		procedureIndex,
+		setProcedureIndex,
+    completionState,
+    setCompletionState,
+    userSteps,
+    setUserSteps,
+    ui
+  } = useProcedure();
+	const sampleExperiment = sampleExperiments[procedureIndex];
+
+  useEffect(() => {
+    const idParam = searchParams.get("id"); // get the "id" from ?id=1
+    if (idParam && procedureIndex !== Number(idParam)) {
+      setProcedureIndex(Number(idParam)); // convert string -> number
+    }
+    const guideParam = searchParams.get("guided"); // get the "id" from ?id=1
+		if (guideParam) {
+			if (guideParam === "false") {
+				if (guided !== false) setGuided(false);
+			}
+			else if (guideParam === "true") {
+				if (guided !== true) setGuided(true);
+			}
+		}
+  }, [searchParams, procedureIndex, setProcedureIndex]);
+
 	const workbenchRef = useRef<HTMLDivElement>(null);
 	const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
 	const itemMotionValues = useRef(new Map<string, { x: MotionValue, y: MotionValue }>()).current;
@@ -116,6 +154,30 @@ export default function ChemSimLabPage() {
 	}, [lastInteractionToast, toast]);
 
 	const addLabItem = (type: EquipmentType) => {
+		if (guided) {
+			const action: UserAction = {
+				task: "create",
+				execution: "instant",
+				labitem: type,
+			};
+
+			const result: IngestResult = ingestUserAction(
+				action,
+				procedure.steps,
+				completionState,
+				userSteps,
+				ui,
+			);
+			if (!result.valid) {
+				return;
+			}
+			setCompletionState(result.updatedCompletionState);
+			setUserSteps(result.updatedUserSteps);
+			if (result.completed && result.progressId) {
+				trackStep(result.progressId);
+			}
+		}
+
 		const newItem: LabItem = {
 			id: `${type}-${Date.now()}`,
 			type,
@@ -181,6 +243,40 @@ export default function ChemSimLabPage() {
 	};
 
 	const addReagentToItem = (itemId: string, reagent: Reagent, volume: number, concentration: number) => {
+    const item = labItems.find((i) => i.id === itemId);
+    if (!item || !item.contents) return;
+
+    // 1️⃣ Create the corresponding user action
+		if (guided) {
+			const action: UserAction = {
+				task: "fill", // task type for adding reagent
+				execution: "instant", // or "repeatable" if you want to handle pouring gradually
+				labitem: item.type, // use lab item type for matching
+				reagent: reagent.id,
+				volume,
+				concentration,
+			};
+
+			// 2️⃣ Ingest the action
+			const result: IngestResult = ingestUserAction(
+				action,
+				procedure.steps,
+				completionState,
+				userSteps,
+				ui,
+			);
+
+			// 3️⃣ If invalid according to procedure, stop
+			if (!result.valid) return;
+
+			// 4️⃣ Update state from ingest result
+			setCompletionState(result.updatedCompletionState);
+			setUserSteps(result.updatedUserSteps);
+			if (result.completed && result.progressId) {
+				trackStep(result.progressId);
+			}
+		}
+
 		setLabItems(prevItems => prevItems.map(item => {
 			if (item.id === itemId && item.contents) {
 				// if(item.contents.volume > 0 && item.contents.reagent?.id !== reagent.id) {
@@ -221,7 +317,7 @@ export default function ChemSimLabPage() {
 			}
 			return item;
 		}));
-		trackStep(sampleExperiment.steps[0]);
+		// trackStep(sampleExperiment.steps[0]);
 	};
 
 	const updateItemPosition = (id: string, x: number, y: number) => {
@@ -706,14 +802,14 @@ export default function ChemSimLabPage() {
 		checkForHeating(draggedItem, info);
 	};
 
-	const trackStep = (step: ExperimentStep) => {
-		if (!stepsTaken.find(s => s.id === step.id)) {
-			setStepsTaken(prev => [...prev, step]);
-			if (currentStepIndex < sampleExperiment.steps.length - 1) {
-				setCurrentStepIndex(currentStepIndex + 1);
-			}
-		}
-	};
+  const trackStep = (id: string) => {
+    if (!stepsTaken.find((s) => s.id === id)) {
+      setStepsTaken((prev) => [...prev, sampleExperiment.steps.find(step => step.id === id)!]);
+      if (currentStepIndex < sampleExperiment.steps.length - 1) {
+        setCurrentStepIndex(currentStepIndex + 1);
+      }
+    }
+  };
 
 	const checkForPour = (draggedItem: LabItem, info: PanInfo) => {
 		if (!draggedItem.contents || draggedItem.contents.volume === 0) return;
@@ -749,7 +845,7 @@ export default function ChemSimLabPage() {
 								// Simple color mixing for titration
 								if ((source.contents.reagent?.id === 'hcl' && target.contents.reagent?.id === 'naoh') || (source.contents.reagent?.id === 'naoh' && target.contents.reagent?.id === 'hcl')) {
 									target.contents.color = '#FFB6C1'; // Pink for titration
-									trackStep(sampleExperiment.steps[2]);
+									// trackStep(sampleExperiment.steps[2]);
 								} else {
 									setLastInteractionToast({ title: 'Mixing not implemented', description: 'This simulation does not support complex mixing yet.', variant: 'destructive' });
 									return prevItems;
@@ -766,7 +862,7 @@ export default function ChemSimLabPage() {
 							newItems[targetIndex] = target;
 
 							setLastInteractionToast({ title: "Pour Complete", description: `Poured into ${target.type}.` });
-							trackStep(sampleExperiment.steps[0]);
+							// trackStep(sampleExperiment.steps[0]);
 						}
 						return newItems;
 					});
@@ -801,7 +897,7 @@ export default function ChemSimLabPage() {
 						return item;
 					}));
 					setLastInteractionToast({ title: "Heating", description: `Started heating the ${draggedItem.type}.` });
-					trackStep(sampleExperiment.steps[3]);
+					// trackStep(sampleExperiment.steps[3]);
 					setTimeout(() => {
 						setLabItems(prev => prev.map(item => ({ ...item, isHeating: false })));
 					}, 5000);

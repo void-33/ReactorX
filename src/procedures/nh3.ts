@@ -2,8 +2,8 @@ import { Step } from "@/lib/types";
 
 export const ammoniaProcedure: Step[] = [
   // Assembly of equipment
-  { id: 1, task: 'create', execution: 'instant', labitem: 'tank', params: { subtype: 'N2_tank', name: 'N2' }, pre: [] },
-  { id: 2, task: 'create', execution: 'instant', labitem: 'tank', params: { subtype: 'H2_tank', name: 'H2' }, pre: [] },
+  { id: 1, task: 'create', execution: 'instant', labitem: 'storagetank', params: { subtype: 'N2_tank', name: 'N2' }, pre: [] },
+  { id: 2, task: 'create', execution: 'instant', labitem: 'storagetank', params: { subtype: 'H2_tank', name: 'H2' }, pre: [] },
   { id: 3, task: 'create', execution: 'instant', labitem: 'compressor', params: { name: 'Compressor1' }, pre: [] },
   { id: 4, task: 'create', execution: 'instant', labitem: 'reactor', params: { name: 'Reactor1' }, pre: [] },
   { id: 5, task: 'create', execution: 'instant', labitem: 'condenser', params: { name: 'Condenser1' }, pre: [] },

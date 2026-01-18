@@ -84,6 +84,7 @@ export type Drop = {
 export type TaskType =
   | "create"             // add equipment to scene
   | "connect"            // connect two pieces of equipment / pipe
+  | "fill"            // connect two pieces of equipment / pipe
   | "start_equipment"    // turn on compressor, heater, pump
   | "stop_equipment"     // turn off
   | "set_pressure"       // set target pressure (modal input)
