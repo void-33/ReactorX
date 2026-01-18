@@ -48,22 +48,22 @@ const ELBOW_PIPE_SNAP_CONFIGS = {
     270: { pipeOffsetX: -220, pipeOffsetY: 70, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 270
   },
   90: { // Elbow rotation 90 (outlets: bottom, left)
-    0: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },     // Pipe rotation 0
-    90: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },    // Pipe rotation 90
-    180: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 180
-    270: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 270
+    0: { pipeOffsetX: -104, pipeOffsetY: -140, microAdjustX: 0, microAdjustY: 0 },     // Pipe rotation 0
+    90: { pipeOffsetX: 115, pipeOffsetY: 81, microAdjustX: 0, microAdjustY: 0 },    // Pipe rotation 90
+    180: { pipeOffsetX: -103, pipeOffsetY: -140, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 180
+    270: { pipeOffsetX: 120, pipeOffsetY: 81, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 270
   },
   180: { // Elbow rotation 180 (outlets: top, left)
-    0: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },     // Pipe rotation 0
-    90: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },    // Pipe rotation 90
-    180: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 180
-    270: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 270
+    0: { pipeOffsetX: -115, pipeOffsetY: +200, microAdjustX: 0, microAdjustY: 0 },     // Pipe rotation 0
+    90: { pipeOffsetX: 105, pipeOffsetY: -19, microAdjustX: 0, microAdjustY: 0 },    // Pipe rotation 90
+    180: { pipeOffsetX: -115, pipeOffsetY: 200, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 180
+    270: { pipeOffsetX: 107, pipeOffsetY: -17, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 270
   },
   270: { // Elbow rotation 270 (outlets: top, right)
-    0: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },     // Pipe rotation 0
-    90: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },    // Pipe rotation 90
-    180: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 180
-    270: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 270
+    0: { pipeOffsetX: -17, pipeOffsetY: 190, microAdjustX: 0, microAdjustY: 0 },     // Pipe rotation 0
+    90: { pipeOffsetX: -240, pipeOffsetY: -31, microAdjustX: 0, microAdjustY: 0 },    // Pipe rotation 90
+    180: { pipeOffsetX: -15, pipeOffsetY: 190, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 180
+    270: { pipeOffsetX: -237, pipeOffsetY: -30, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 270
   },
 };
 
