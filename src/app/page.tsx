@@ -380,6 +380,47 @@ export default function ChemSimLabPage() {
 			}
 		}
 
+		// Check for storage tank snapping to elbow (only for rotation 0 and 90)
+		if (draggedItem.type === 'storagetank') {
+			const compatibleElbows = labItems.filter(item => 
+				item.type === 'elbow' && 
+				(item.rotation === 0 || item.rotation === 90) &&
+				!group.has(item.id)
+			);
+
+			for (const elbow of compatibleElbows) {
+				const ELBOW_SNAP_CONFIG = elbow.rotation === 90
+					? ELBOW_TANK_SNAP_CONFIG_ROTATION_90
+					: ELBOW_TANK_SNAP_CONFIG_ROTATION_0;
+
+				// Target Tank Position calc derived from Elbow->Tank logic
+				const targetTankX = elbow.position.x - ELBOW_SNAP_CONFIG.microAdjustX + 60 - ELBOW_SNAP_CONFIG.storageTopOffsetX;
+				const targetTankY = elbow.position.y - ELBOW_SNAP_CONFIG.microAdjustY + 60 - ELBOW_SNAP_CONFIG.storageTopOffsetY;
+
+				// Connection point on Tank (at current dragged position)
+				const currentTankTopX = finalX + ELBOW_SNAP_CONFIG.storageTopOffsetX;
+				const currentTankTopY = finalY + ELBOW_SNAP_CONFIG.storageTopOffsetY;
+				
+				// Connection point on Elbow
+				const elbowCenterX = elbow.position.x + 60;
+				const elbowCenterY = elbow.position.y + 60;
+				
+				const distance = Math.hypot(currentTankTopX - elbowCenterX, currentTankTopY - elbowCenterY);
+				
+				if (distance < ELBOW_SNAP_CONFIG.snapDistance) {
+					finalX = targetTankX;
+					finalY = targetTankY;
+					
+					connectPairAdd(draggedItem.id, elbow.id);
+					setLastInteractionToast({
+						title: "Tank Connected",
+						description: "Storage tank attached to elbow."
+					});
+					break;
+				}
+			}
+		}
+
 		// Check for elbow-to-pipe or pipe-to-elbow snapping
 		if (draggedItem.type === 'elbow' || draggedItem.type === 'pipe') {
 			const targetType = draggedItem.type === 'elbow' ? 'pipe' : 'elbow';
