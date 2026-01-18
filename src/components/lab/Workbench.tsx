@@ -13,6 +13,7 @@ import Meter from './equipment/Mater';
 import Elbow from './equipment/Elbow';
 import Drop from './equipment/Drop';
 import { X } from 'lucide-react';
+import Tvalve from './equipment/Tvalve';
 
 interface WorkbenchProps {
 	items: LabItem[];
@@ -36,6 +37,7 @@ const equipmentMap = {
 	pipe: Pipe,
 	elbow: Elbow,
 	meter: Meter,
+	tvalve:Tvalve
 };
 
 const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
