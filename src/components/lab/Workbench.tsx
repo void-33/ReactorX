@@ -9,6 +9,7 @@ import Burner from './equipment/Burner';
 import Burette from './equipment/Burette';
 import Pipe from './equipment/Pipe';
 import StorageTank from './equipment/StorageTank';
+import Meter from './equipment/Mater';
 import Elbow from './equipment/Elbow';
 import Drop from './equipment/Drop';
 import { X } from 'lucide-react';
@@ -34,6 +35,7 @@ const equipmentMap = {
 	storagetank: StorageTank,
 	pipe: Pipe,
 	elbow: Elbow,
+	meter: Meter,
 };
 
 const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
