@@ -1,4 +1,4 @@
-# **App Name**: ChemSimLab
+# **App Name**: ReactorX
 
 ## Core Features:
 

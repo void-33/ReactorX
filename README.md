@@ -1,12 +1,12 @@
-# 🧪 Virtual Chemistry Lab – Industrial Safety Simulation
+# 🧪 ReactorX – Industrial Plant and Emergency Response Simulation
 
 > An immersive platform for mastering industrial safety across chemical, manufacturing, and processing facilities through interactive accident response scenarios
 
 ---
 
-## What is Virtual Chemistry Lab?
+## What is ReactorX?
 
-**Virtual Chemistry Lab** transforms industrial safety training by creating realistic and risk-free simulations of diverse chemical and industrial operations. Step into the role of a safety engineer across multiple industrial environments from chemical manufacturing plants to petroleum refineries where you'll navigate high-stakes scenarios, detect critical failures and execute life-saving emergency protocols all within an engaging interface.
+**ReactorX** transforms industrial safety training by creating realistic and risk-free simulations of diverse chemical and industrial operations. Step into the role of a safety engineer across multiple industrial environments from chemical manufacturing plants to petroleum refineries where you'll navigate high-stakes scenarios, detect critical failures and execute life-saving emergency protocols all within an engaging interface.
 
 Whether you're a student exploring industrial processes or a professional honing safety skills across different sectors this platform bridges the gap between theory and real world application.
 
