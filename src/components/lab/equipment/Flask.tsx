@@ -53,7 +53,7 @@ export default function Flask({ contents, isHeating }: LabItem) {
       </defs>
 
       {/* mouth rect for drop collision */}
-      <rect x={bbox.x+55} y={bbox.y} width={45} height={bbox.height} fill='red'></rect>
+      {/* <rect x={bbox.x+55} y={bbox.y} width={45} height={bbox.height} fill='red'></rect> */}
 
       {/* content rect */}
       <rect x={bbox.x} y={contentY} width={bbox.width} height={contentHeight} fill='blue' clipPath='url(#flask-mask)'></rect>
