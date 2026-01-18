@@ -34,6 +34,25 @@ const ELBOW_TANK_SNAP_CONFIG_ROTATION_90 = {
   microAdjustY: 0, // Additional vertical adjustment
 };
 
+// === REVERSE: TANK TO ELBOW SNAPPING CONFIGS ===
+// When tank is dragged to elbow (rotation 0)
+const TANK_TO_ELBOW_SNAP_CONFIG_ROTATION_0 = {
+  snapDistance: 80,
+  storageTopOffsetX: 130,
+  storageTopOffsetY: -80,
+  microAdjustX: -60,
+  microAdjustY: 10,
+};
+
+// When tank is dragged to elbow (rotation 90)
+const TANK_TO_ELBOW_SNAP_CONFIG_ROTATION_90 = {
+  snapDistance: 150,
+  storageTopOffsetX: 130,
+  storageTopOffsetY: -80,
+  microAdjustX: 38,
+  microAdjustY: -3,
+};
+
 // === PIPE TO STORAGE TANK SNAPPING CONFIGS ===
 // Pipe rotation 0 (vertical)
 const PIPE_TANK_SNAP_CONFIG_ROTATION_0 = {
@@ -557,6 +576,134 @@ export default function ChemSimLabPage() {
       }
     }
 
+    // Check for storage tank being dragged towards elbow/pipe (reverse snapping)
+    if (draggedItem.type === 'storagetank') {
+      // Get all elbows with rotation 0 or 90
+      const snapableElbows = labItems.filter(item => 
+        item.type === 'elbow' && (item.rotation === 0 || item.rotation === 90)
+      );
+      
+      // Get all pipes with rotation 0 or 180
+      const snapablePipes = labItems.filter(item => 
+        item.type === 'pipe' && (item.rotation === 0 || item.rotation === 180)
+      );
+      
+      const currentConnections = snappedConnections.get(draggedItem.id) || [];
+      
+      // Check if tank already has a connection (max 1 per tank)
+      const tankHasSpace = currentConnections.length === 0;
+      
+      // Find closest elbow or pipe that can snap
+      let closestItem: { item: LabItem; distance: number; config: any } | null = null;
+      
+      // Check elbows
+      for (const elbow of snapableElbows) {
+        const ELBOW_SNAP_CONFIG = elbow.rotation === 90 
+          ? TANK_TO_ELBOW_SNAP_CONFIG_ROTATION_90 
+          : TANK_TO_ELBOW_SNAP_CONFIG_ROTATION_0;
+        
+        // Calculate where the elbow would need to snap (tank's top-middle)
+        const tankTopX = finalX + ELBOW_SNAP_CONFIG.storageTopOffsetX;
+        const tankTopY = finalY + ELBOW_SNAP_CONFIG.storageTopOffsetY;
+        
+        // Calculate elbow center
+        const elbowCenterX = elbow.position.x + 60;
+        const elbowCenterY = elbow.position.y + 60;
+        
+        const distance = Math.sqrt(
+          Math.pow(elbowCenterX - tankTopX, 2) + 
+          Math.pow(elbowCenterY - tankTopY, 2)
+        );
+        
+        if (distance < ELBOW_SNAP_CONFIG.snapDistance) {
+          if (!closestItem || distance < closestItem.distance) {
+            closestItem = { item: elbow, distance, config: ELBOW_SNAP_CONFIG };
+          }
+        }
+      }
+      
+      // Check pipes
+      for (const pipe of snapablePipes) {
+        const PIPE_SNAP_CONFIG = pipe.rotation === 180 
+          ? PIPE_TANK_SNAP_CONFIG_ROTATION_180 
+          : PIPE_TANK_SNAP_CONFIG_ROTATION_0;
+        
+        // Calculate where the pipe would need to snap (tank's top-middle)
+        const tankTopX = finalX + PIPE_SNAP_CONFIG.storageTopOffsetX;
+        const tankTopY = finalY + PIPE_SNAP_CONFIG.storageTopOffsetY;
+        
+        // Calculate pipe center
+        const pipeCenterX = pipe.position.x + 100;
+        const pipeCenterY = pipe.position.y + 100;
+        
+        const distance = Math.sqrt(
+          Math.pow(pipeCenterX - tankTopX, 2) + 
+          Math.pow(pipeCenterY - tankTopY, 2)
+        );
+        
+        if (distance < PIPE_SNAP_CONFIG.snapDistance) {
+          if (!closestItem || distance < closestItem.distance) {
+            closestItem = { item: pipe, distance, config: PIPE_SNAP_CONFIG };
+          }
+        }
+      }
+      
+      const wasConnectedToAnyItem = currentConnections.length > 0;
+      
+      if (closestItem && tankHasSpace) {
+        const itemToSnap = closestItem.item;
+        const config = closestItem.config;
+        const wasConnectedToThisItem = currentConnections.includes(itemToSnap.id);
+        
+        // Snap the tank to align with the item
+        const itemCenter = itemToSnap.type === 'elbow' ? 60 : 100;
+        finalX = itemToSnap.position.x + itemCenter - config.storageTopOffsetX + config.microAdjustX;
+        finalY = itemToSnap.position.y + itemCenter - config.storageTopOffsetY + config.microAdjustY;
+        
+        if (!wasConnectedToThisItem) {
+          setSnappedConnections(prev => {
+            const newMap = new Map(prev);
+            const tankConns = [...(newMap.get(draggedItem.id) || []), itemToSnap.id];
+            const itemConns = [...(newMap.get(itemToSnap.id) || []), draggedItem.id];
+            newMap.set(draggedItem.id, tankConns);
+            newMap.set(itemToSnap.id, itemConns);
+            return newMap;
+          });
+          setLastInteractionToast({ 
+            title: "Tank Snapped", 
+            description: `Storage tank attached to ${itemToSnap.type}(${itemToSnap.rotation || 0}°).`
+          });
+        }
+      } else if (closestItem && !tankHasSpace) {
+        // Tank is full
+        setLastInteractionToast({ 
+          title: "Cannot Snap", 
+          description: "Storage tank already has a connection."
+        });
+      } else if (wasConnectedToAnyItem) {
+        // Unsnap from all connected items
+        setSnappedConnections(prev => {
+          const newMap = new Map(prev);
+          const tankConns = newMap.get(draggedItem.id) || [];
+          
+          for (const itemId of tankConns) {
+            const itemConns = (newMap.get(itemId) || []).filter(id => id !== draggedItem.id);
+            
+            if (itemConns.length > 0) newMap.set(itemId, itemConns);
+            else newMap.delete(itemId);
+          }
+          
+          newMap.delete(draggedItem.id);
+          
+          return newMap;
+        });
+        setLastInteractionToast({ 
+          title: "Tank Disconnected", 
+          description: "Storage tank unsnapped."
+        });
+      }
+    }
+
     // Check for elbow-to-pipe or pipe-to-elbow snapping
     if (draggedItem.type === 'elbow' || draggedItem.type === 'pipe') {
       const targetType = draggedItem.type === 'elbow' ? 'pipe' : 'elbow';
@@ -565,7 +712,7 @@ export default function ChemSimLabPage() {
       
       // Check current connections for the dragged item
       const currentConnections = snappedConnections.get(draggedItem.id) || [];
-      const maxConnections = draggedItem.type === 'elbow' ? 2 : 1;
+      const maxConnections = 2; // Both elbow and pipe can have max 2 connections
       
       // Track which connections to remove
       const connectionsToRemove: string[] = [];
@@ -638,7 +785,7 @@ export default function ChemSimLabPage() {
       if (bestMatch) {
         const targetItem = bestMatch.item;
         const targetConnections = snappedConnections.get(targetItem.id) || [];
-        const targetMaxConnections = targetItem.type === 'elbow' ? 2 : 1;
+        const targetMaxConnections = 2; // Both elbow and pipe can have max 2 connections
         
         // Check if either item has reached max connections
         const draggedHasSpace = currentConnections.length < maxConnections;
