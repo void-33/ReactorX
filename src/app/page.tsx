@@ -77,8 +77,9 @@ export default function ChemSimLabPage() {
   const [lastInteractionToast, setLastInteractionToast] = useState<{title: string, description: string, variant?: "default" | "destructive" } | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [drops, setDrops] = useState<Drop[]>([]);
-  // Track snapped connections: key is item ID, value is connected item ID
-  const [snappedConnections, setSnappedConnections] = useState<Map<string, string>>(new Map());
+  // Track snapped connections: key is item ID, value is array of connected item IDs
+  // For elbows, max 2 connections (one per outlet); for pipes, max 1 connection
+  const [snappedConnections, setSnappedConnections] = useState<Map<string, string[]>>(new Map());
   
   const workbenchRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
@@ -116,9 +117,12 @@ export default function ChemSimLabPage() {
     // Clear any connections for this item
     setSnappedConnections(prev => {
       const newMap = new Map(prev);
-      const connectedId = newMap.get(itemId);
-      if (connectedId) {
-        newMap.delete(connectedId);
+      const connectedIds = newMap.get(itemId) || [];
+      // Remove this item from all connected items' connection lists
+      for (const connectedId of connectedIds) {
+        const conns = (newMap.get(connectedId) || []).filter(id => id !== itemId);
+        if (conns.length > 0) newMap.set(connectedId, conns);
+        else newMap.delete(connectedId);
       }
       newMap.delete(itemId);
       return newMap;
@@ -130,9 +134,12 @@ export default function ChemSimLabPage() {
     // Clear any connections when rotating since position will change
     setSnappedConnections(prev => {
       const newMap = new Map(prev);
-      const connectedId = newMap.get(itemId);
-      if (connectedId) {
-        newMap.delete(connectedId);
+      const connectedIds = newMap.get(itemId) || [];
+      // Remove this item from all connected items' connection lists
+      for (const connectedId of connectedIds) {
+        const conns = (newMap.get(connectedId) || []).filter(id => id !== itemId);
+        if (conns.length > 0) newMap.set(connectedId, conns);
+        else newMap.delete(connectedId);
       }
       newMap.delete(itemId);
       return newMap;
@@ -282,96 +289,185 @@ export default function ChemSimLabPage() {
     // Check for elbow-to-pipe or pipe-to-elbow snapping
     if (draggedItem.type === 'elbow' || draggedItem.type === 'pipe') {
       const targetType = draggedItem.type === 'elbow' ? 'pipe' : 'elbow';
-      const targetItem = labItems.find(item => item.type === targetType);
+      // Get all potential target items (all pipes if dragging elbow, all elbows if dragging pipe)
+      const targetItems = labItems.filter(item => item.type === targetType);
       
-      if (targetItem) {
-        const targetRef = itemRefs.current.get(targetItem.id);
-        if (targetRef && workbenchRef.current) {
-          // Get both rotations - default to 0 if not set
-          const elbowRotation = (draggedItem.type === 'elbow' ? draggedItem.rotation : targetItem.rotation) || 0;
-          const pipeRotation = (draggedItem.type === 'pipe' ? draggedItem.rotation : targetItem.rotation) || 0;
-          
-          // Get the appropriate config for this combination
-          const pipeSnapConfig = ELBOW_PIPE_SNAP_CONFIGS[elbowRotation]?.[pipeRotation] || ELBOW_PIPE_SNAP_CONFIGS[0][0];
-          
-          // Determine which item is elbow and which is pipe
-          const elbowItem = draggedItem.type === 'elbow' ? draggedItem : targetItem;
-          const pipeItem = draggedItem.type === 'pipe' ? draggedItem : targetItem;
-          
-          // Calculate current positions
-          const elbowX = draggedItem.type === 'elbow' ? finalX : elbowItem.position.x;
-          const elbowY = draggedItem.type === 'elbow' ? finalY : elbowItem.position.y;
-          const pipeX = draggedItem.type === 'pipe' ? finalX : pipeItem.position.x;
-          const pipeY = draggedItem.type === 'pipe' ? finalY : pipeItem.position.y;
-          
-          // Create bounding boxes for collision detection
-          const elbowRect = {
-            x: elbowX,
-            y: elbowY,
-            width: ELBOW_BBOX.width,
-            height: ELBOW_BBOX.height
-          };
-          
-          const pipeRect = {
-            x: pipeX,
-            y: pipeY,
-            width: PIPE_BBOX.width,
-            height: PIPE_BBOX.height
-          };
-          
-          // Check if rectangles overlap (AABB collision detection)
-          const isOverlapping = (
-            elbowRect.x < pipeRect.x + pipeRect.width &&
-            elbowRect.x + elbowRect.width > pipeRect.x &&
-            elbowRect.y < pipeRect.y + pipeRect.height &&
-            elbowRect.y + elbowRect.height > pipeRect.y
+      // Check current connections for the dragged item
+      const currentConnections = snappedConnections.get(draggedItem.id) || [];
+      const maxConnections = draggedItem.type === 'elbow' ? 2 : 1;
+      
+      // Track which connections to remove
+      const connectionsToRemove: string[] = [];
+      
+      // Try to find overlapping items and snap to the closest one
+      let bestMatch: { item: LabItem; distance: number; isOverlapping: boolean } | null = null;
+      
+      for (const targetItem of targetItems) {
+        // Get both rotations - default to 0 if not set
+        const elbowRotation = (draggedItem.type === 'elbow' ? draggedItem.rotation : targetItem.rotation) || 0;
+        const pipeRotation = (draggedItem.type === 'pipe' ? draggedItem.rotation : targetItem.rotation) || 0;
+        
+        // Get the appropriate config for this combination
+        const pipeSnapConfig = ELBOW_PIPE_SNAP_CONFIGS[elbowRotation]?.[pipeRotation] || ELBOW_PIPE_SNAP_CONFIGS[0][0];
+        
+        // Determine which item is elbow and which is pipe
+        const elbowItem = draggedItem.type === 'elbow' ? draggedItem : targetItem;
+        const pipeItem = draggedItem.type === 'pipe' ? draggedItem : targetItem;
+        
+        // Calculate current positions
+        const elbowX = draggedItem.type === 'elbow' ? finalX : elbowItem.position.x;
+        const elbowY = draggedItem.type === 'elbow' ? finalY : elbowItem.position.y;
+        const pipeX = draggedItem.type === 'pipe' ? finalX : pipeItem.position.x;
+        const pipeY = draggedItem.type === 'pipe' ? finalY : pipeItem.position.y;
+        
+        // Create bounding boxes for collision detection
+        const elbowRect = {
+          x: elbowX,
+          y: elbowY,
+          width: ELBOW_BBOX.width,
+          height: ELBOW_BBOX.height
+        };
+        
+        const pipeRect = {
+          x: pipeX,
+          y: pipeY,
+          width: PIPE_BBOX.width,
+          height: PIPE_BBOX.height
+        };
+        
+        // Check if rectangles overlap (AABB collision detection)
+        const isOverlapping = (
+          elbowRect.x < pipeRect.x + pipeRect.width &&
+          elbowRect.x + elbowRect.width > pipeRect.x &&
+          elbowRect.y < pipeRect.y + pipeRect.height &&
+          elbowRect.y + elbowRect.height > pipeRect.y
+        );
+        
+        if (isOverlapping) {
+          // Calculate distance to find the closest overlapping item
+          const centerX = (elbowX + elbowX + ELBOW_BBOX.width) / 2;
+          const centerY = (elbowY + elbowY + ELBOW_BBOX.height) / 2;
+          const targetCenterX = (pipeX + pipeX + PIPE_BBOX.width) / 2;
+          const targetCenterY = (pipeY + pipeY + PIPE_BBOX.height) / 2;
+          const distance = Math.sqrt(
+            Math.pow(centerX - targetCenterX, 2) + 
+            Math.pow(centerY - targetCenterY, 2)
           );
           
-          const wasConnected = snappedConnections.has(draggedItem.id) && snappedConnections.get(draggedItem.id) === targetItem.id;
-          
-          // Snap if rectangles are overlapping
-          if (isOverlapping) {
-            // Calculate pipe snap position
-            const pipeSnapX = pipeItem.position.x + pipeSnapConfig.pipeOffsetX;
-            const pipeSnapY = pipeItem.position.y + pipeSnapConfig.pipeOffsetY;
-            if (draggedItem.type === 'elbow') {
-              finalX = pipeSnapX + pipeSnapConfig.microAdjustX;
-              finalY = pipeSnapY + pipeSnapConfig.microAdjustY;
-            } else {
-              // If dragging pipe, snap to elbow
-              finalX = elbowItem.position.x - pipeSnapConfig.pipeOffsetX + pipeSnapConfig.microAdjustX;
-              finalY = elbowItem.position.y - pipeSnapConfig.pipeOffsetY + pipeSnapConfig.microAdjustY;
-            }
-            
-            // Only show toast if newly connected (not already snapped)
-            if (!wasConnected) {
-              setSnappedConnections(prev => {
-                const newMap = new Map(prev);
-                newMap.set(draggedItem.id, targetItem.id);
-                newMap.set(targetItem.id, draggedItem.id);
-                return newMap;
-              });
-              setLastInteractionToast({ 
-                title: "Pipe Connected", 
-                description: `Elbow(${elbowRotation}°) + Pipe(${pipeRotation}°) connected.`
-              });
-            }
-          } else {
-            // Unsnap if moved beyond threshold
-            if (wasConnected) {
-              setSnappedConnections(prev => {
-                const newMap = new Map(prev);
-                newMap.delete(draggedItem.id);
-                newMap.delete(targetItem.id);
-                return newMap;
-              });
-              setLastInteractionToast({ 
-                title: "Pipe Disconnected", 
-                description: "Items unsnapped."
-              });
+          if (!bestMatch || distance < bestMatch.distance) {
+            bestMatch = { item: targetItem, distance, isOverlapping: true };
+          }
+        } else if (currentConnections.includes(targetItem.id)) {
+          // If this item is currently connected but not overlapping, mark for disconnection
+          connectionsToRemove.push(targetItem.id);
+        }
+      }
+      
+      // Process the best match (if any)
+      if (bestMatch) {
+        const targetItem = bestMatch.item;
+        const targetConnections = snappedConnections.get(targetItem.id) || [];
+        const targetMaxConnections = targetItem.type === 'elbow' ? 2 : 1;
+        
+        // Check if either item has reached max connections
+        const draggedHasSpace = currentConnections.length < maxConnections;
+        const targetHasSpace = targetConnections.length < targetMaxConnections;
+        const alreadyConnected = currentConnections.includes(targetItem.id);
+        
+        // Get both rotations
+        const elbowRotation = (draggedItem.type === 'elbow' ? draggedItem.rotation : targetItem.rotation) || 0;
+        const pipeRotation = (draggedItem.type === 'pipe' ? draggedItem.rotation : targetItem.rotation) || 0;
+        
+        // Check if elbow already has a pipe with the same rotation
+        const elbowItem = draggedItem.type === 'elbow' ? draggedItem : targetItem;
+        const pipeItem = draggedItem.type === 'pipe' ? draggedItem : targetItem;
+        const elbowConnections = snappedConnections.get(elbowItem.id) || [];
+        
+        let hasSameRotationPipe = false;
+        if (!alreadyConnected) {
+          // Check all connected pipes to this elbow for same rotation
+          for (const connId of elbowConnections) {
+            const connectedItem = labItems.find(item => item.id === connId);
+            if (connectedItem && connectedItem.type === 'pipe') {
+              const connectedPipeRotation = connectedItem.rotation || 0;
+              if (connectedPipeRotation === pipeRotation) {
+                hasSameRotationPipe = true;
+                break;
+              }
             }
           }
         }
+        
+        if (hasSameRotationPipe) {
+          setLastInteractionToast({ 
+            title: "Cannot Connect", 
+            description: `Elbow already has a pipe with rotation ${pipeRotation}°. Each outlet can only have one pipe.`,
+            variant: "destructive"
+          });
+        } else if ((draggedHasSpace && targetHasSpace) || alreadyConnected) {
+          const pipeSnapConfig = ELBOW_PIPE_SNAP_CONFIGS[elbowRotation]?.[pipeRotation] || ELBOW_PIPE_SNAP_CONFIGS[0][0];
+          
+          // Calculate pipe snap position
+          const pipeSnapX = pipeItem.position.x + pipeSnapConfig.pipeOffsetX;
+          const pipeSnapY = pipeItem.position.y + pipeSnapConfig.pipeOffsetY;
+          
+          if (draggedItem.type === 'elbow') {
+            finalX = pipeSnapX + pipeSnapConfig.microAdjustX;
+            finalY = pipeSnapY + pipeSnapConfig.microAdjustY;
+          } else {
+            // If dragging pipe, snap to elbow
+            finalX = elbowItem.position.x - pipeSnapConfig.pipeOffsetX + pipeSnapConfig.microAdjustX;
+            finalY = elbowItem.position.y - pipeSnapConfig.pipeOffsetY + pipeSnapConfig.microAdjustY;
+          }
+          
+          // Only show toast if newly connected
+          if (!alreadyConnected) {
+            setSnappedConnections(prev => {
+              const newMap = new Map(prev);
+              const draggedConns = [...(newMap.get(draggedItem.id) || []), targetItem.id];
+              const targetConns = [...(newMap.get(targetItem.id) || []), draggedItem.id];
+              newMap.set(draggedItem.id, draggedConns);
+              newMap.set(targetItem.id, targetConns);
+              return newMap;
+            });
+            const elbowConnsCount = (draggedItem.type === 'elbow' ? currentConnections.length : targetConnections.length) + 1;
+            setLastInteractionToast({ 
+              title: "Pipe Connected", 
+              description: `Elbow(${elbowRotation}°) + Pipe(${pipeRotation}°) connected. (${elbowConnsCount}/2 outlets)`
+            });
+          }
+        } else if (!draggedHasSpace) {
+          setLastInteractionToast({ 
+            title: "Cannot Connect", 
+            description: `${draggedItem.type === 'elbow' ? 'Elbow' : 'Pipe'} already has maximum connections.`,
+            variant: "destructive"
+          });
+        }
+      }
+      
+      // Disconnect items that are no longer overlapping
+      if (connectionsToRemove.length > 0) {
+        setSnappedConnections(prev => {
+          const newMap = new Map(prev);
+          
+          for (const connectedId of connectionsToRemove) {
+            const draggedConns = (newMap.get(draggedItem.id) || []).filter(id => id !== connectedId);
+            const targetConns = (newMap.get(connectedId) || []).filter(id => id !== draggedItem.id);
+            
+            if (draggedConns.length > 0) newMap.set(draggedItem.id, draggedConns);
+            else newMap.delete(draggedItem.id);
+            
+            if (targetConns.length > 0) newMap.set(connectedId, targetConns);
+            else newMap.delete(connectedId);
+          }
+          
+          return newMap;
+        });
+        
+        setLastInteractionToast({ 
+          title: "Pipe Disconnected", 
+          description: `${connectionsToRemove.length} connection(s) unsnapped.`
+        });
       }
     }
 
@@ -603,6 +699,31 @@ export default function ChemSimLabPage() {
             return newItems;
           });
         }
+      }
+      
+      // Disconnect items that are no longer overlapping
+      if (connectionsToRemove.length > 0) {
+        setSnappedConnections(prev => {
+          const newMap = new Map(prev);
+          
+          for (const connectedId of connectionsToRemove) {
+            const draggedConns = (newMap.get(draggedItem.id) || []).filter(id => id !== connectedId);
+            const targetConns = (newMap.get(connectedId) || []).filter(id => id !== draggedItem.id);
+            
+            if (draggedConns.length > 0) newMap.set(draggedItem.id, draggedConns);
+            else newMap.delete(draggedItem.id);
+            
+            if (targetConns.length > 0) newMap.set(connectedId, targetConns);
+            else newMap.delete(connectedId);
+          }
+          
+          return newMap;
+        });
+        
+        setLastInteractionToast({ 
+          title: "Pipe Disconnected", 
+          description: `${connectionsToRemove.length} connection(s) unsnapped.`
+        });
       }
     });
   };
