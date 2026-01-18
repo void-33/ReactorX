@@ -200,27 +200,75 @@ export default function PlantSchematic({
           <line x1="150" y1="352" x2="145" y2="345" stroke="#fca5a5" strokeWidth="1.5" opacity="0.7" />
           <line x1="150" y1="352" x2="155" y2="345" stroke="#fca5a5" strokeWidth="1.5" opacity="0.7" />
 
-          {/* Animated gas plume */}
+          {/* Animated ammonia gas plume - Multiple layers for realism */}
           {gasIntensity > 0 && (
             <>
-              <motion.circle
-                cx="150" cy="360" r={20 + leakRadius * 0.3}
-                fill="url(#gasGradient1)" opacity={Math.min(gasIntensity / 150, 0.6)}
-                animate={{ 
-                  r: [20 + leakRadius * 0.3, 25 + leakRadius * 0.4],
-                  opacity: [Math.min(gasIntensity / 150, 0.6), Math.min(gasIntensity / 200, 0.4)]
+              {/* Layer 1 - Inner gas plume (yellowish-green) */}
+              <motion.ellipse
+                cx="150" cy={340 - (gasIntensity * 0.5)}
+                rx={20 + leakRadius * 0.4}
+                ry={30 + leakRadius * 0.5}
+                fill="url(#ammoniasGradient1)"
+                opacity={sprayActive ? 0.2 : Math.min(gasIntensity / 140, 0.7)}
+                animate={{
+                  cy: [340 - (gasIntensity * 0.5), 320 - (gasIntensity * 0.6), 300 - (gasIntensity * 0.7)],
+                  rx: [20 + leakRadius * 0.4, 25 + leakRadius * 0.5, 30 + leakRadius * 0.6],
+                  ry: [30 + leakRadius * 0.5, 40 + leakRadius * 0.6, 45 + leakRadius * 0.7],
                 }}
-                transition={{ duration: 2, repeat: Infinity }}
+                transition={{ duration: sprayActive ? 2 : 3, repeat: Infinity }}
               />
+              
+              {/* Layer 2 - Middle gas cloud (more translucent) */}
               <motion.circle
-                cx="150" cy="360" r={30 + leakRadius * 0.5}
-                fill="url(#gasGradient2)" opacity={Math.min(gasIntensity / 200, 0.3)}
-                animate={{ 
-                  r: [30 + leakRadius * 0.5, 40 + leakRadius * 0.7],
-                  opacity: [Math.min(gasIntensity / 200, 0.3), Math.min(gasIntensity / 250, 0.15)]
+                cx="150" cy={350 - (gasIntensity * 0.3)}
+                r={25 + leakRadius * 0.3}
+                fill="url(#ammoniasGradient2)"
+                opacity={sprayActive ? 0.1 : Math.min(gasIntensity / 160, 0.5)}
+                animate={{
+                  cy: [350 - (gasIntensity * 0.3), 330 - (gasIntensity * 0.4), 310 - (gasIntensity * 0.5)],
+                  r: [25 + leakRadius * 0.3, 35 + leakRadius * 0.4, 45 + leakRadius * 0.5],
                 }}
-                transition={{ duration: 3, repeat: Infinity }}
+                transition={{ duration: sprayActive ? 2.5 : 4, repeat: Infinity }}
               />
+
+              {/* Layer 3 - Outer dispersing gas (most translucent) */}
+              <motion.circle
+                cx="150" cy={360 - (gasIntensity * 0.2)}
+                r={35 + leakRadius * 0.4}
+                fill="url(#ammoniasGradient3)"
+                opacity={sprayActive ? 0.05 : Math.min(gasIntensity / 200, 0.3)}
+                animate={{
+                  cy: [360 - (gasIntensity * 0.2), 340 - (gasIntensity * 0.3), 320 - (gasIntensity * 0.4)],
+                  r: [35 + leakRadius * 0.4, 50 + leakRadius * 0.5, 60 + leakRadius * 0.6],
+                }}
+                transition={{ duration: sprayActive ? 3 : 5, repeat: Infinity }}
+              />
+
+              {/* Spray effect - fume suppression particles */}
+              {sprayActive && (
+                <>
+                  {[...Array(12)].map((_, i) => (
+                    <motion.circle
+                      key={`fume-suppression-${i}`}
+                      cx={150 + (Math.random() - 0.5) * 60}
+                      cy={320 + (Math.random() - 0.5) * 80}
+                      r={3 + Math.random() * 2}
+                      fill="#10b981"
+                      opacity={0.4}
+                      animate={{
+                        y: [0, -40 + Math.random() * 60],
+                        opacity: [0.4, 0],
+                        r: [3 + Math.random() * 2, 1],
+                      }}
+                      transition={{
+                        duration: 2 + Math.random() * 1.5,
+                        repeat: Infinity,
+                        delay: Math.random() * 0.5,
+                      }}
+                    />
+                  ))}
+                </>
+              )}
             </>
           )}
 
@@ -404,7 +452,26 @@ export default function PlantSchematic({
             </feMerge>
           </filter>
 
-          {/* Gas Gradients */}
+          {/* Ammonia Gas Gradients - Yellowish-green toxic gas effect */}
+          <radialGradient id="ammoniasGradient1">
+            <stop offset="0%" stopColor="#e8ecd7" stopOpacity="0.7" />
+            <stop offset="40%" stopColor="#bed691" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#d3dbca" stopOpacity="0" />
+          </radialGradient>
+          
+          <radialGradient id="ammoniasGradient2">
+            <stop offset="0%" stopColor="#b6c08c" stopOpacity="0.5" />
+            <stop offset="50%" stopColor="#c1cfa8" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#cdddbd" stopOpacity="0" />
+          </radialGradient>
+          
+          <radialGradient id="ammoniasGradient3">
+            <stop offset="0%" stopColor="#cad8b0" stopOpacity="0.3 " />
+            <stop offset="60%" stopColor="#ffffff" stopOpacity="0.1" />
+            <stop offset="100%" stopColor="#477a2b" stopOpacity="0" />
+          </radialGradient>
+
+          {/* Legacy Gas Gradients */}
           <radialGradient id="gasGradient1">
             <stop offset="0%" stopColor="#ff6b6b" stopOpacity="0.9" />
             <stop offset="70%" stopColor="#ff8787" stopOpacity="0.4" />
