@@ -9,8 +9,7 @@ export default function StorageTank({ contents, isHeating }: LabItem) {
     const [bbox, setBBox] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
     const content_volume = Math.min((contents?.volume || 0), MAX_VOLUME);
-    // const fillRatio = content_volume / MAX_VOLUME;
-    const fillRatio = 0.7;
+    const fillRatio = content_volume / MAX_VOLUME;
 
 
 
