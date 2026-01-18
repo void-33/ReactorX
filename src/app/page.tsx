@@ -34,6 +34,43 @@ const ELBOW_TANK_SNAP_CONFIG_ROTATION_90 = {
   microAdjustY: 0, // Additional vertical adjustment
 };
 
+// === PIPE TO STORAGE TANK SNAPPING CONFIGS ===
+// Pipe rotation 0 (vertical)
+const PIPE_TANK_SNAP_CONFIG_ROTATION_0 = {
+  snapDistance: 200,
+  storageTopOffsetX: 130,
+  storageTopOffsetY: -80,
+  microAdjustX: 105,
+  microAdjustY: -50,
+};
+
+// Pipe rotation 90 (horizontal)
+const PIPE_TANK_SNAP_CONFIG_ROTATION_90 = {
+  snapDistance: 200,
+  storageTopOffsetX: 130,
+  storageTopOffsetY: -80,
+  microAdjustX: 0,
+  microAdjustY: 0,
+};
+
+// Pipe rotation 180
+const PIPE_TANK_SNAP_CONFIG_ROTATION_180 = {
+  snapDistance: 200,
+  storageTopOffsetX: 130,
+  storageTopOffsetY: -80,
+  microAdjustX: 105,
+  microAdjustY: -50,
+};
+
+// Pipe rotation 270
+const PIPE_TANK_SNAP_CONFIG_ROTATION_270 = {
+  snapDistance: 200,
+  storageTopOffsetX: 130,
+  storageTopOffsetY: -80,
+  microAdjustX: 0,
+  microAdjustY: 0,
+};
+
 // === PIPE SNAPPING CONFIGS ===
 // Bounding box dimensions for collision detection
 const ELBOW_BBOX = { width: 120, height: 120 }; // Elbow bounding box size
@@ -247,42 +284,276 @@ export default function ChemSimLabPage() {
     let finalX = draggedItem.position.x + info.offset.x;
     let finalY = draggedItem.position.y + info.offset.y;
 
+    // If storage tank is dragged, check and disconnect all attached items
+    if (draggedItem.type === 'storagetank') {
+      const currentConnections = snappedConnections.get(draggedItem.id) || [];
+      const connectionsToRemove: string[] = [];
+      
+      for (const connectedId of currentConnections) {
+        const connectedItem = labItems.find(item => item.id === connectedId);
+        if (connectedItem) {
+          // Calculate expected position based on connection
+          let expectedX, expectedY;
+          
+          if (connectedItem.type === 'elbow' && (connectedItem.rotation === 0 || connectedItem.rotation === 90)) {
+            const config = connectedItem.rotation === 90 
+              ? ELBOW_TANK_SNAP_CONFIG_ROTATION_90 
+              : ELBOW_TANK_SNAP_CONFIG_ROTATION_0;
+            const tankTopX = finalX + config.storageTopOffsetX;
+            const tankTopY = finalY + config.storageTopOffsetY;
+            const elbowCenterX = connectedItem.position.x + 60;
+            const elbowCenterY = connectedItem.position.y + 60;
+            const distance = Math.sqrt(
+              Math.pow(elbowCenterX - tankTopX, 2) + 
+              Math.pow(elbowCenterY - tankTopY, 2)
+            );
+            if (distance >= config.snapDistance) {
+              connectionsToRemove.push(connectedId);
+            }
+          } else if (connectedItem.type === 'pipe' && (connectedItem.rotation === 0 || connectedItem.rotation === 180)) {
+            const config = connectedItem.rotation === 180 
+              ? PIPE_TANK_SNAP_CONFIG_ROTATION_180 
+              : PIPE_TANK_SNAP_CONFIG_ROTATION_0;
+            const tankTopX = finalX + config.storageTopOffsetX;
+            const tankTopY = finalY + config.storageTopOffsetY;
+            const pipeCenterX = connectedItem.position.x + 100;
+            const pipeCenterY = connectedItem.position.y + 100;
+            const distance = Math.sqrt(
+              Math.pow(pipeCenterX - tankTopX, 2) + 
+              Math.pow(pipeCenterY - tankTopY, 2)
+            );
+            if (distance >= config.snapDistance) {
+              connectionsToRemove.push(connectedId);
+            }
+          }
+        }
+      }
+      
+      // Disconnect items that are out of range
+      if (connectionsToRemove.length > 0) {
+        setSnappedConnections(prev => {
+          const newMap = new Map(prev);
+          
+          for (const connectedId of connectionsToRemove) {
+            const tankConns = (newMap.get(draggedItem.id) || []).filter(id => id !== connectedId);
+            const itemConns = (newMap.get(connectedId) || []).filter(id => id !== draggedItem.id);
+            
+            if (tankConns.length > 0) newMap.set(draggedItem.id, tankConns);
+            else newMap.delete(draggedItem.id);
+            
+            if (itemConns.length > 0) newMap.set(connectedId, itemConns);
+            else newMap.delete(connectedId);
+          }
+          
+          return newMap;
+        });
+        
+        setLastInteractionToast({ 
+          title: "Items Disconnected", 
+          description: `${connectionsToRemove.length} item(s) unsnapped from tank.`
+        });
+      }
+    }
+
     // Check for elbow snapping to storage tank (only for rotation 0 and 90)
     if (draggedItem.type === 'elbow' && (draggedItem.rotation === 0 || draggedItem.rotation === 90)) {
-      const storageTank = labItems.find(item => item.type === 'storagetank');
-      if (storageTank) {
-        const storageTankRef = itemRefs.current.get(storageTank.id);
-        if (storageTankRef && workbenchRef.current) {
-          const storageRect = storageTankRef.getBoundingClientRect();
-          const workbenchRect = workbenchRef.current.getBoundingClientRect();
-          
-          // Select the appropriate config based on elbow rotation
-          const ELBOW_SNAP_CONFIG = draggedItem.rotation === 90 
-            ? ELBOW_TANK_SNAP_CONFIG_ROTATION_90 
-            : ELBOW_TANK_SNAP_CONFIG_ROTATION_0;
-          
-          // Calculate storage tank's top-middle position in workbench coordinates
+      // Get all storage tanks
+      const storageTanks = labItems.filter(item => item.type === 'storagetank');
+      const currentConnections = snappedConnections.get(draggedItem.id) || [];
+      
+      // Select the appropriate config based on elbow rotation
+      const ELBOW_SNAP_CONFIG = draggedItem.rotation === 90 
+        ? ELBOW_TANK_SNAP_CONFIG_ROTATION_90 
+        : ELBOW_TANK_SNAP_CONFIG_ROTATION_0;
+      
+      // Find the closest tank within snap distance
+      let closestTank: { tank: LabItem; distance: number } | null = null;
+      
+      for (const storageTank of storageTanks) {
+        // Calculate storage tank's top-middle position
+        const storageTankTopX = storageTank.position.x + ELBOW_SNAP_CONFIG.storageTopOffsetX;
+        const storageTankTopY = storageTank.position.y + ELBOW_SNAP_CONFIG.storageTopOffsetY;
+        
+        // Calculate distance between elbow center and storage tank top
+        const elbowCenterX = finalX + 60;
+        const elbowCenterY = finalY + 60;
+        const distance = Math.sqrt(
+          Math.pow(elbowCenterX - storageTankTopX, 2) + 
+          Math.pow(elbowCenterY - storageTankTopY, 2)
+        );
+        
+        if (distance < ELBOW_SNAP_CONFIG.snapDistance) {
+          if (!closestTank || distance < closestTank.distance) {
+            closestTank = { tank: storageTank, distance };
+          }
+        }
+      }
+      
+      if (closestTank) {
+        const storageTank = closestTank.tank;
+        const tankConnections = snappedConnections.get(storageTank.id) || [];
+        const wasConnectedToTank = currentConnections.includes(storageTank.id);
+        const tankHasSpace = tankConnections.length < 1; // Max 1 connection per tank
+        
+        if (tankHasSpace || wasConnectedToTank) {
+          // Calculate snap position
           const storageTankTopX = storageTank.position.x + ELBOW_SNAP_CONFIG.storageTopOffsetX;
           const storageTankTopY = storageTank.position.y + ELBOW_SNAP_CONFIG.storageTopOffsetY;
           
-          // Calculate distance between elbow center and storage tank top
-          const elbowCenterX = finalX + 60; // Approximate elbow center
-          const elbowCenterY = finalY + 60;
-          const distance = Math.sqrt(
-            Math.pow(elbowCenterX - storageTankTopX, 2) + 
-            Math.pow(elbowCenterY - storageTankTopY, 2)
-          );
+          finalX = storageTankTopX - 60 + ELBOW_SNAP_CONFIG.microAdjustX;
+          finalY = storageTankTopY - 60 + ELBOW_SNAP_CONFIG.microAdjustY;
           
-          // Snap if within threshold
-          if (distance < ELBOW_SNAP_CONFIG.snapDistance) {
-            finalX = storageTankTopX - 60 + ELBOW_SNAP_CONFIG.microAdjustX; // Center elbow on snap point
-            finalY = storageTankTopY - 60 + ELBOW_SNAP_CONFIG.microAdjustY;
+          if (!wasConnectedToTank) {
+            setSnappedConnections(prev => {
+              const newMap = new Map(prev);
+              const draggedConns = [...(newMap.get(draggedItem.id) || []), storageTank.id];
+              const tankConns = [...(newMap.get(storageTank.id) || []), draggedItem.id];
+              newMap.set(draggedItem.id, draggedConns);
+              newMap.set(storageTank.id, tankConns);
+              return newMap;
+            });
             setLastInteractionToast({ 
               title: "Elbow Snapped", 
               description: "Elbow attached to storage tank top."
             });
           }
+        } else {
+          setLastInteractionToast({ 
+            title: "Cannot Connect", 
+            description: "Storage tank already has a connection.",
+            variant: "destructive"
+          });
         }
+      } else {
+        // Check if disconnected from any tank
+        for (const tankId of currentConnections) {
+          const tank = labItems.find(item => item.id === tankId && item.type === 'storagetank');
+          if (tank) {
+            setSnappedConnections(prev => {
+              const newMap = new Map(prev);
+              const draggedConns = (newMap.get(draggedItem.id) || []).filter(id => id !== tankId);
+              const tankConns = (newMap.get(tankId) || []).filter(id => id !== draggedItem.id);
+              
+              if (draggedConns.length > 0) newMap.set(draggedItem.id, draggedConns);
+              else newMap.delete(draggedItem.id);
+              
+              if (tankConns.length > 0) newMap.set(tankId, tankConns);
+              else newMap.delete(tankId);
+              
+              return newMap;
+            });
+            setLastInteractionToast({ 
+              title: "Elbow Disconnected", 
+              description: "Elbow unsnapped from storage tank."
+            });
+          }
+        }
+      }
+    }
+
+    // Check for pipe snapping to storage tank (only for rotation 0 and 180)
+    if (draggedItem.type === 'pipe' && (draggedItem.rotation === 0 || draggedItem.rotation === 180)) {
+      // Get all storage tanks
+      const storageTanks = labItems.filter(item => item.type === 'storagetank');
+      
+      // Find the closest tank within snap distance
+      let closestTank: { tank: LabItem; distance: number } | null = null;
+      
+      // Select the appropriate config based on pipe rotation
+      const PIPE_SNAP_CONFIG = draggedItem.rotation === 180 
+        ? PIPE_TANK_SNAP_CONFIG_ROTATION_180 
+        : PIPE_TANK_SNAP_CONFIG_ROTATION_0;
+      
+      for (const storageTank of storageTanks) {
+        const storageTankRef = itemRefs.current.get(storageTank.id);
+        if (storageTankRef && workbenchRef.current) {
+          // Calculate storage tank's top-middle position in workbench coordinates
+          const storageTankTopX = storageTank.position.x + PIPE_SNAP_CONFIG.storageTopOffsetX;
+          const storageTankTopY = storageTank.position.y + PIPE_SNAP_CONFIG.storageTopOffsetY;
+          
+          // Calculate distance between pipe center and storage tank top
+          const pipeCenterX = finalX + 100; // Approximate pipe center
+          const pipeCenterY = finalY + 100;
+          const distance = Math.sqrt(
+            Math.pow(pipeCenterX - storageTankTopX, 2) + 
+            Math.pow(pipeCenterY - storageTankTopY, 2)
+          );
+          
+          if (distance < PIPE_SNAP_CONFIG.snapDistance) {
+            if (!closestTank || distance < closestTank.distance) {
+              closestTank = { tank: storageTank, distance };
+            }
+          }
+        }
+      }
+      
+      const currentConnections = snappedConnections.get(draggedItem.id) || [];
+      const wasConnectedToAnyTank = storageTanks.some(tank => currentConnections.includes(tank.id));
+      
+      if (closestTank) {
+        const storageTank = closestTank.tank;
+        const wasConnectedToThisTank = currentConnections.includes(storageTank.id);
+        
+        // Check if tank already has a connection (max 1 per tank)
+        const tankHasSpace = (snappedConnections.get(storageTank.id) || []).length === 0;
+        
+        if (tankHasSpace || wasConnectedToThisTank) {
+          // Calculate snap position
+          const storageTankTopX = storageTank.position.x + PIPE_SNAP_CONFIG.storageTopOffsetX;
+          const storageTankTopY = storageTank.position.y + PIPE_SNAP_CONFIG.storageTopOffsetY;
+          
+          finalX = storageTankTopX - 100 + PIPE_SNAP_CONFIG.microAdjustX; // Center pipe on snap point
+          finalY = storageTankTopY - 100 + PIPE_SNAP_CONFIG.microAdjustY;
+          
+          if (!wasConnectedToThisTank) {
+            setSnappedConnections(prev => {
+              const newMap = new Map(prev);
+              const draggedConns = [...(newMap.get(draggedItem.id) || []), storageTank.id];
+              const tankConns = [...(newMap.get(storageTank.id) || []), draggedItem.id];
+              newMap.set(draggedItem.id, draggedConns);
+              newMap.set(storageTank.id, tankConns);
+              return newMap;
+            });
+            setLastInteractionToast({ 
+              title: "Pipe Snapped", 
+              description: `Pipe(${draggedItem.rotation || 0}°) attached to storage tank top.`
+            });
+          }
+        } else {
+          // Tank is already occupied
+          setLastInteractionToast({ 
+            title: "Cannot Snap", 
+            description: "Storage tank already has a connection."
+          });
+        }
+      } else if (wasConnectedToAnyTank) {
+        // Unsnap from all tanks
+        setSnappedConnections(prev => {
+          const newMap = new Map(prev);
+          const draggedConns = newMap.get(draggedItem.id) || [];
+          
+          // Remove connections to all tanks
+          for (const tankId of draggedConns) {
+            const tank = storageTanks.find(t => t.id === tankId);
+            if (tank) {
+              const tankConns = (newMap.get(tankId) || []).filter(id => id !== draggedItem.id);
+              
+              if (tankConns.length > 0) newMap.set(tankId, tankConns);
+              else newMap.delete(tankId);
+            }
+          }
+          
+          // Clear dragged item's tank connections
+          const remainingConns = draggedConns.filter(id => !storageTanks.some(t => t.id === id));
+          if (remainingConns.length > 0) newMap.set(draggedItem.id, remainingConns);
+          else newMap.delete(draggedItem.id);
+          
+          return newMap;
+        });
+        setLastInteractionToast({ 
+          title: "Pipe Disconnected", 
+          description: "Pipe unsnapped from storage tank."
+        });
       }
     }
 
