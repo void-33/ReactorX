@@ -12,6 +12,7 @@ import type { Experiment, LabItem, Reagent } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 
 interface ExperimentPanelProps {
+	enableSOP: boolean;
   experiment: Experiment;
   currentStepIndex: number;
   items: LabItem[];
@@ -21,11 +22,13 @@ interface ExperimentPanelProps {
   onGetGuidance: () => void;
   onAnalyzeCompletion: () => void;
   onDropReagent: () => void;
+	handleColor: (id: string) => void;
   aiGuidance: { guidance: string; isCorrect: boolean } | null;
   isLoading: boolean;
 }
 
 export default function ExperimentPanel({
+	enableSOP,
   experiment,
   currentStepIndex,
   items,
@@ -35,6 +38,7 @@ export default function ExperimentPanel({
   onGetGuidance,
   onAnalyzeCompletion,
   onDropReagent,
+	handleColor,
   aiGuidance,
   isLoading,
 }: ExperimentPanelProps) {
@@ -142,10 +146,34 @@ export default function ExperimentPanel({
                   />
                   <span>M</span>
                 </div>
-                
-                <Button onClick={handleAddReagent} disabled={!selectedItem || !selectedReagentId || selectedVolume <= 0} className="w-full">
+								<Button onClick={handleAddReagent} disabled={!selectedItem || !selectedReagentId || selectedVolume <= 0} className="w-full">
                     Add {selectedVolume}ml
                 </Button>
+                {enableSOP && 
+								<Button onClick={() => handleColor("N2_pipe")} className="w-full">
+                    Open on N2 tank valve
+                </Button>
+								}
+								{enableSOP &&
+								<Button onClick={() => handleColor("H2_pipe")} className="w-full">
+                    Open on H2 tank valve
+                </Button>
+								}
+								{enableSOP &&
+								<Button onClick={() => handleColor("tvalve_pipe")} className="w-full">
+                    Connect T valve
+                </Button>
+								}
+								{enableSOP &&
+								<Button onClick={() => handleColor("comp_pipe")} className="w-full">
+                    Turn on the compressor
+                </Button>
+								}
+								{enableSOP &&
+								<Button onClick={() => handleColor("reactor_pipe")} className="w-full">
+                    Turn on the reactor
+                </Button>
+								}
                 {selectedItem?.type === 'burette' && (
                   <Button 
                     onClick={onDropReagent} 

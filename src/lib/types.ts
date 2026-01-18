@@ -199,7 +199,15 @@ export interface CreateStep extends BaseStep {
   task: "create";
   execution: "instant";
   labitem: string;                  // equipment id
-  params?: Record<string, any>;     // e.g., subtype, name
+	name: string;
+}
+
+export interface FillStep extends BaseStep {
+  task: "fill";
+  execution: "instant";
+  itemId: string;
+  reagent: string;
+  volume?: number;
 }
 
 export interface ConnectStep extends BaseStep {
@@ -269,6 +277,7 @@ export interface Temporary2Step extends BaseStep {
 // ----------------------------
 export type Step =
   | CreateStep
+	| FillStep
   | ConnectStep
   | StartStopStep
   | SetPressureStep
@@ -321,6 +330,7 @@ export type StepCompletionState =
 export interface UserAction {
   task: TaskType;
   execution: ExecutionType;
+	itemId?: string;
   labitem?: string;
   target?: string;
   source?: string;

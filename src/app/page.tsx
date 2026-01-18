@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, PanInfo, useMotionValue, MotionValue, motionValue } from 'framer-motion';
 import { sampleExperiment } from '@/lib/experiments';
-import type { LabItem, EquipmentType, Reagent, ExperimentStep, Drop, IngestResult, UserAction } from '@/lib/types';
+import type { LabItem, EquipmentType, Reagent, ExperimentStep, Drop, IngestResult, UserAction, CreateStep } from '@/lib/types';
 import Header from '@/components/lab/Header';
 import Workbench from '@/components/lab/Workbench';
 import EquipmentPanel from '@/components/lab/EquipmentPanel';
@@ -18,6 +18,8 @@ import { initializeCompletionState } from '@/procedures/initializeCompletionStat
 import { triggerCompletionEvents } from '@/procedures/triggerCompletionEvents';
 import { useProcedure } from '@/context/ProcedureContext';
 import { ingestUserAction } from '@/procedures/ingestUserAction';
+import { Result } from 'postcss';
+import { handleClientScriptLoad } from 'next/script';
 
 // Elbow snapping configuration - adjust these for fine-tuning
 // === STORAGE TANK SNAPPING CONFIGS ===
@@ -60,28 +62,28 @@ const ELBOW_COMPRESSOR_SNAP_CONFIG_ROTATION_90 = {
 	microAdjustY: -35,
 };
 
-// === REVERSE: COMPRESSOR TO ELBOW SNAPPING CONFIGS ===
-// When compressor is dragged to elbow (rotation 0)
-const COMPRESSOR_TO_ELBOW_SNAP_CONFIG_ROTATION_0 = {
-	snapDistance: 200,
-	compressorOffsetX: 0,
-	compressorOffsetY: 0,
-	microAdjustX: 215,
-	microAdjustY: -50,
-};
-
-// When compressor is dragged to elbow (rotation 90)
-const COMPRESSOR_TO_ELBOW_SNAP_CONFIG_ROTATION_90 = {
-	snapDistance: 200,
-	compressorOffsetX: 0,
-	compressorOffsetY: 0,
-	microAdjustX: 110,
-	microAdjustY: -35,
-};
-
 // === PIPE TO COMPRESSOR SNAPPING CONFIGS ===
-// Configuration for pipe rotation 90 snapping to compressor
-const PIPE_COMPRESSOR_SNAP_CONFIG_ROTATION_90 = {
+// Configuration for pipe rotation 90 snapping to compressor RIGHT side
+const PIPE_COMPRESSOR_SNAP_RIGHT = {
+	snapDistance: 150,
+	compressorOffsetX: 395,
+	compressorOffsetY: 115,
+	microAdjustX: 0,
+	microAdjustY: 0,
+};
+
+// Configuration for pipe rotation 90 snapping to compressor LEFT side
+const PIPE_COMPRESSOR_SNAP_LEFT = {
+	snapDistance: 150,
+	compressorOffsetX: -70,
+	compressorOffsetY: 115,
+	microAdjustX: 0,
+	microAdjustY: 0,
+};
+
+// === REVERSE: COMPRESSOR TO PIPE SNAPPING CONFIGS ===
+// When compressor is dragged to pipe (rotation 90) - connects to compressor's RIGHT side
+const COMPRESSOR_TO_PIPE_SNAP_RIGHT = {
 	snapDistance: 200,
 	compressorOffsetX: 510,
 	compressorOffsetY: 200,
@@ -89,11 +91,10 @@ const PIPE_COMPRESSOR_SNAP_CONFIG_ROTATION_90 = {
 	microAdjustY: 0,
 };
 
-// === REVERSE: COMPRESSOR TO PIPE SNAPPING CONFIGS ===
-// When compressor is dragged to pipe (rotation 90)
-const COMPRESSOR_TO_PIPE_SNAP_CONFIG_ROTATION_90 = {
+// When compressor is dragged to pipe (rotation 90) - connects to compressor's LEFT side
+const COMPRESSOR_TO_PIPE_SNAP_LEFT = {
 	snapDistance: 200,
-	compressorOffsetX: 510,
+	compressorOffsetX: 150,
 	compressorOffsetY: 200,
 	microAdjustX: 0,
 	microAdjustY: 0,
@@ -121,8 +122,8 @@ const ELBOW_REACTOR_SNAP_CONFIG_ROTATION_90 = {
 // Configuration for elbow rotation 180 (outlets at top and left) snapping to reactor
 const ELBOW_REACTOR_SNAP_CONFIG_ROTATION_180 = {
 	snapDistance: 200,
-	reactorOffsetX: 5,
-	reactorOffsetY: 310,
+	reactorOffsetX: 17,
+	reactorOffsetY: 230,
 	microAdjustX: 0,
 	microAdjustY: 0,
 };
@@ -277,27 +278,32 @@ export default function ChemSimLabPage() {
 	// Track snapped connections: key is item ID, value is Set of connected item IDs
 	const [snappedConnections, setSnappedConnections] = useState<Map<string, Set<string>>>(new Map());
 
-  const searchParams = useSearchParams(); // for ?id=1
-  const {
-    guided,
-    setGuided,
-    procedure,
+	const searchParams = useSearchParams(); // for ?id=1
+	const {
+		guided,
+		setGuided,
+		procedure,
 		procedureIndex,
 		setProcedureIndex,
-    completionState,
-    setCompletionState,
-    userSteps,
-    setUserSteps,
-    ui
-  } = useProcedure();
+		completionState,
+		setCompletionState,
+		userSteps,
+		setUserSteps,
+		ui
+	} = useProcedure();
 	const sampleExperiment = sampleExperiments[procedureIndex];
 
-  useEffect(() => {
-    const idParam = searchParams.get("id"); // get the "id" from ?id=1
-    if (idParam && procedureIndex !== Number(idParam)) {
-      setProcedureIndex(Number(idParam)); // convert string -> number
-    }
-    const guideParam = searchParams.get("guided"); // get the "id" from ?id=1
+  const enableSOP = procedure.steps.filter(
+    (step) =>
+		completionState.get(step.id)?.status !== "completed"
+  ).length === 0;
+
+	useEffect(() => {
+		const idParam = searchParams.get("id"); // get the "id" from ?id=1
+		if (idParam && procedureIndex !== Number(idParam)) {
+			setProcedureIndex(Number(idParam)); // convert string -> number
+		}
+		const guideParam = searchParams.get("guided"); // get the "id" from ?id=1
 		if (guideParam) {
 			if (guideParam === "false") {
 				if (guided !== false) setGuided(false);
@@ -306,7 +312,7 @@ export default function ChemSimLabPage() {
 				if (guided !== true) setGuided(true);
 			}
 		}
-  }, [searchParams, procedureIndex, setProcedureIndex]);
+	}, [searchParams, procedureIndex, setProcedureIndex]);
 
 	const workbenchRef = useRef<HTMLDivElement>(null);
 	const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
@@ -344,6 +350,7 @@ export default function ChemSimLabPage() {
 	}, [lastInteractionToast, toast]);
 
 	const addLabItem = (type: EquipmentType) => {
+		let result: any;
 		if (guided) {
 			const action: UserAction = {
 				task: "create",
@@ -351,7 +358,7 @@ export default function ChemSimLabPage() {
 				labitem: type,
 			};
 
-			const result: IngestResult = ingestUserAction(
+			result = ingestUserAction(
 				action,
 				procedure.steps,
 				completionState,
@@ -369,15 +376,15 @@ export default function ChemSimLabPage() {
 		}
 
 		const newItem: LabItem = {
-			id: `${type}-${Date.now()}`,
+			id: (result?.matchedStep?.name) ?? `${type}-${Date.now()}`,
 			type,
 			position: { x: 200, y: 200 },
 			chemicals: [],
 			isDraggingEnabled: true,
 			isSelected: false,
-			...(type === 'beaker' || type === 'flask' || type === 'burette' ? { contents: { reagent: null, volume: 0, color: 'transparent', concentration: 0.1 } } : {}),
+			...(type === 'beaker' || type === 'flask' || type === 'burette' || type === "storagetank" ? { contents: { reagent: null, volume: 0, color: 'transparent', concentration: 0.1 } } : {}),
 			...(type === 'burner' ? { isHeating: false } : {}),
-			...(type === 'pipe' || type === 'elbow' || type === 'tvalve' ? { rotation: 0 } : {}),
+			...(type === 'pipe' || type === 'elbow' || type === 'tvalve' ? { rotation: 0, contents: { reagent: null, volume: 0, color: 'transparent', concentration: 0.1 } } : {}),
 		};
 		setLabItems((prev) => [...prev, newItem]);
 	};
@@ -433,15 +440,15 @@ export default function ChemSimLabPage() {
 	};
 
 	const addReagentToItem = (itemId: string, reagent: Reagent, volume: number, concentration: number) => {
-    const item = labItems.find((i) => i.id === itemId);
-    if (!item || !item.contents) return;
+		const item = labItems.find((i) => i.id === itemId);
+		if (!item || !item.contents) return;
 
-    // 1️⃣ Create the corresponding user action
+		// 1️⃣ Create the corresponding user action
 		if (guided) {
 			const action: UserAction = {
 				task: "fill", // task type for adding reagent
 				execution: "instant", // or "repeatable" if you want to handle pouring gradually
-				labitem: item.type, // use lab item type for matching
+				itemId: item.id, // use lab item type for matching
 				reagent: reagent.id,
 				volume,
 				concentration,
@@ -456,6 +463,7 @@ export default function ChemSimLabPage() {
 				ui,
 			);
 
+			console.log(result);
 			// 3️⃣ If invalid according to procedure, stop
 			if (!result.valid) return;
 
@@ -668,8 +676,8 @@ export default function ChemSimLabPage() {
 
 		// Check for storage tank snapping to elbow (only for rotation 0 and 90)
 		if (draggedItem.type === 'storagetank') {
-			const compatibleElbows = labItems.filter(item => 
-				item.type === 'elbow' && 
+			const compatibleElbows = labItems.filter(item =>
+				item.type === 'elbow' &&
 				(item.rotation === 0 || item.rotation === 90) &&
 				!group.has(item.id)
 			);
@@ -686,17 +694,17 @@ export default function ChemSimLabPage() {
 				// Connection point on Tank (at current dragged position)
 				const currentTankTopX = finalX + ELBOW_SNAP_CONFIG.storageTopOffsetX;
 				const currentTankTopY = finalY + ELBOW_SNAP_CONFIG.storageTopOffsetY;
-				
+
 				// Connection point on Elbow
 				const elbowCenterX = elbow.position.x + 60;
 				const elbowCenterY = elbow.position.y + 60;
-				
+
 				const distance = Math.hypot(currentTankTopX - elbowCenterX, currentTankTopY - elbowCenterY);
-				
+
 				if (distance < ELBOW_SNAP_CONFIG.snapDistance) {
 					finalX = targetTankX;
 					finalY = targetTankY;
-					
+
 					connectPairAdd(draggedItem.id, elbow.id);
 					setLastInteractionToast({
 						title: "Tank Connected",
@@ -734,7 +742,7 @@ export default function ChemSimLabPage() {
 					if (distance < ELBOW_SNAP_CONFIG.snapDistance) {
 						finalX = compressorSnapX - 60 + ELBOW_SNAP_CONFIG.microAdjustX; // Center elbow on snap point
 						finalY = compressorSnapY - 60 + ELBOW_SNAP_CONFIG.microAdjustY;
-						
+
 						connectPairAdd(draggedItem.id, compressor.id);
 						setLastInteractionToast({
 							title: "Elbow Snapped",
@@ -747,8 +755,8 @@ export default function ChemSimLabPage() {
 
 		// Check for compressor snapping to elbow (only for rotation 0 and 90)
 		if (draggedItem.type === 'compressor') {
-			const compatibleElbows = labItems.filter(item => 
-				item.type === 'elbow' && 
+			const compatibleElbows = labItems.filter(item =>
+				item.type === 'elbow' &&
 				(item.rotation === 0 || item.rotation === 90) &&
 				!group.has(item.id)
 			);
@@ -765,17 +773,17 @@ export default function ChemSimLabPage() {
 				// Connection point on Compressor (at current dragged position)
 				const currentCompressorSnapX = finalX + ELBOW_SNAP_CONFIG.compressorOffsetX;
 				const currentCompressorSnapY = finalY + ELBOW_SNAP_CONFIG.compressorOffsetY;
-				
+
 				// Connection point on Elbow
 				const elbowCenterX = elbow.position.x + 60;
 				const elbowCenterY = elbow.position.y + 60;
-				
+
 				const distance = Math.hypot(currentCompressorSnapX - elbowCenterX, currentCompressorSnapY - elbowCenterY);
-				
+
 				if (distance < ELBOW_SNAP_CONFIG.snapDistance) {
 					finalX = targetCompressorX;
 					finalY = targetCompressorY;
-					
+
 					connectPairAdd(draggedItem.id, elbow.id);
 					setLastInteractionToast({
 						title: "Compressor Connected",
@@ -792,29 +800,63 @@ export default function ChemSimLabPage() {
 			if (compressor) {
 				const compressorRef = itemRefs.current.get(compressor.id);
 				if (compressorRef && workbenchRef.current) {
-					const PIPE_SNAP_CONFIG = PIPE_COMPRESSOR_SNAP_CONFIG_ROTATION_90;
+					// Check snapping for both Left and Right sides
+					const snapConfigs = [
+						{ ...PIPE_COMPRESSOR_SNAP_RIGHT, side: 'right' },
+						{ ...PIPE_COMPRESSOR_SNAP_LEFT, side: 'left' }
+					];
 
-					// Calculate compressor's snap point position
-					const compressorSnapX = compressor.position.x + PIPE_SNAP_CONFIG.compressorOffsetX;
-					const compressorSnapY = compressor.position.y + PIPE_SNAP_CONFIG.compressorOffsetY;
+					let bestSnap = null;
+					let minDist = Infinity;
 
-					// Calculate distance between pipe center and compressor snap point
-					const pipeCenterX = finalX + 100; // Approximate pipe center
-					const pipeCenterY = finalY + 100;
-					const distance = Math.sqrt(
-						Math.pow(pipeCenterX - compressorSnapX, 2) +
-						Math.pow(pipeCenterY - compressorSnapY, 2)
-					);
+					for (const config of snapConfigs) {
+						// Calculate compressor's snap point position
+						const compressorSnapX = compressor.position.x + config.compressorOffsetX;
+						const compressorSnapY = compressor.position.y + config.compressorOffsetY;
 
-					// Snap if within threshold
-					if (distance < PIPE_SNAP_CONFIG.snapDistance) {
-						finalX = compressorSnapX - 100 + PIPE_SNAP_CONFIG.microAdjustX; // Center pipe on snap point
-						finalY = compressorSnapY - 100 + PIPE_SNAP_CONFIG.microAdjustY;
-						
+						// Calculate distance between pipe center and compressor snap point
+						const pipeCenterX = finalX + 100; // Approximate pipe center
+						const pipeCenterY = finalY + 100;
+						const distance = Math.sqrt(
+							Math.pow(pipeCenterX - compressorSnapX, 2) +
+							Math.pow(pipeCenterY - compressorSnapY, 2)
+						);
+
+						// Check if this side is already occupied
+						const currentConns = snappedConnections.get(compressor.id);
+						let isOccupied = false;
+						if (currentConns) {
+							// Determine occupation based on position relative to center
+							const compCenterX = compressor.position.x + 215; // rough center
+							currentConns.forEach(connId => {
+								const connItem = labItems.find(i => i.id === connId);
+								if (connItem && connItem.type === 'pipe') {
+									const isPeerRight = connItem.position.x > compCenterX;
+									if (config.side === 'right' && isPeerRight) isOccupied = true;
+									if (config.side === 'left' && !isPeerRight) isOccupied = true;
+								}
+							});
+						}
+
+						// Snap check
+						if (!isOccupied && distance < config.snapDistance && distance < minDist) {
+							minDist = distance;
+							bestSnap = {
+								x: compressorSnapX - 100 + config.microAdjustX,
+								y: compressorSnapY - 100 + config.microAdjustY,
+								side: config.side
+							};
+						}
+					}
+
+					if (bestSnap) {
+						finalX = bestSnap.x;
+						finalY = bestSnap.y;
+
 						connectPairAdd(draggedItem.id, compressor.id);
 						setLastInteractionToast({
 							title: "Pipe Snapped",
-							description: "Pipe attached to compressor."
+							description: `Pipe attached to compressor (${bestSnap.side}).`
 						});
 					}
 				}
@@ -823,40 +865,49 @@ export default function ChemSimLabPage() {
 
 		// Check for compressor snapping to pipe (only for pipe rotation 90)
 		if (draggedItem.type === 'compressor') {
-			const compatiblePipes = labItems.filter(item => 
-				item.type === 'pipe' && 
+			const compatiblePipes = labItems.filter(item =>
+				item.type === 'pipe' &&
 				item.rotation === 90 &&
 				!group.has(item.id)
 			);
 
 			for (const pipe of compatiblePipes) {
-				const PIPE_SNAP_CONFIG = COMPRESSOR_TO_PIPE_SNAP_CONFIG_ROTATION_90;
+				const checkConfigs = [COMPRESSOR_TO_PIPE_SNAP_RIGHT, COMPRESSOR_TO_PIPE_SNAP_LEFT];
+				let didSnap = false;
 
-				// Target Compressor Position calc derived from Pipe->Compressor logic
-				const targetCompressorX = pipe.position.x - PIPE_SNAP_CONFIG.microAdjustX + 100 - PIPE_SNAP_CONFIG.compressorOffsetX;
-				const targetCompressorY = pipe.position.y - PIPE_SNAP_CONFIG.microAdjustY + 100 - PIPE_SNAP_CONFIG.compressorOffsetY;
+				for (const config of checkConfigs) {
+					// Target Compressor Position calc derived from Pipe->Compressor logic
+					const targetCompressorX = pipe.position.x - config.microAdjustX + 100 - config.compressorOffsetX;
+					const targetCompressorY = pipe.position.y - config.microAdjustY + 100 - config.compressorOffsetY;
 
-				// Connection point on Compressor (at current dragged position)
-				const currentCompressorSnapX = finalX + PIPE_SNAP_CONFIG.compressorOffsetX;
-				const currentCompressorSnapY = finalY + PIPE_SNAP_CONFIG.compressorOffsetY;
-				
-				// Connection point on Pipe
-				const pipeCenterX = pipe.position.x + 100;
-				const pipeCenterY = pipe.position.y + 100;
-				
-				const distance = Math.hypot(currentCompressorSnapX - pipeCenterX, currentCompressorSnapY - pipeCenterY);
-				
-				if (distance < PIPE_SNAP_CONFIG.snapDistance) {
-					finalX = targetCompressorX;
-					finalY = targetCompressorY;
-					
-					connectPairAdd(draggedItem.id, pipe.id);
-					setLastInteractionToast({
-						title: "Compressor Connected",
-						description: "Compressor attached to pipe."
-					});
-					break;
+					// Connection point on Compressor (at current dragged position)
+					const currentCompressorSnapX = finalX + config.compressorOffsetX;
+					const currentCompressorSnapY = finalY + config.compressorOffsetY;
+
+					// Connection point on Pipe
+					const pipeCenterX = pipe.position.x + 100;
+					const pipeCenterY = pipe.position.y + 100;
+
+					const distance = Math.hypot(currentCompressorSnapX - pipeCenterX, currentCompressorSnapY - pipeCenterY);
+
+					// Basic capacity check for compressor: if it already has 2 connections, don't snap
+					const currentConns = snappedConnections.get(draggedItem.id);
+					if (currentConns && currentConns.size >= 2) continue;
+
+					if (distance < config.snapDistance) {
+						finalX = targetCompressorX;
+						finalY = targetCompressorY;
+
+						connectPairAdd(draggedItem.id, pipe.id);
+						setLastInteractionToast({
+							title: "Compressor Connected",
+							description: "Compressor attached to pipe."
+						});
+						didSnap = true;
+						break;
+					}
 				}
+				if (didSnap) break;
 			}
 		}
 
@@ -898,7 +949,7 @@ export default function ChemSimLabPage() {
 					if (distance < ELBOW_SNAP_CONFIG.snapDistance) {
 						finalX = reactorSnapX - 60 + ELBOW_SNAP_CONFIG.microAdjustX; // Center elbow on snap point
 						finalY = reactorSnapY - 60 + ELBOW_SNAP_CONFIG.microAdjustY;
-						
+
 						connectPairAdd(draggedItem.id, reactor.id);
 						setLastInteractionToast({
 							title: "Elbow Snapped",
@@ -911,7 +962,7 @@ export default function ChemSimLabPage() {
 
 		// Check for reactor snapping to elbow (for all rotations: 0, 90, 180, 270)
 		if (draggedItem.type === 'reactor') {
-			const compatibleElbows = labItems.filter(item => 
+			const compatibleElbows = labItems.filter(item =>
 				item.type === 'elbow' &&
 				!group.has(item.id)
 			);
@@ -940,17 +991,17 @@ export default function ChemSimLabPage() {
 				// Connection point on Reactor (at current dragged position)
 				const currentReactorSnapX = finalX + ELBOW_SNAP_CONFIG.reactorOffsetX;
 				const currentReactorSnapY = finalY + ELBOW_SNAP_CONFIG.reactorOffsetY;
-				
+
 				// Connection point on Elbow
 				const elbowCenterX = elbow.position.x + 60;
 				const elbowCenterY = elbow.position.y + 60;
-				
+
 				const distance = Math.hypot(currentReactorSnapX - elbowCenterX, currentReactorSnapY - elbowCenterY);
-				
+
 				if (distance < ELBOW_SNAP_CONFIG.snapDistance) {
 					finalX = targetReactorX;
 					finalY = targetReactorY;
-					
+
 					connectPairAdd(draggedItem.id, elbow.id);
 					setLastInteractionToast({
 						title: "Reactor Connected",
@@ -1238,8 +1289,8 @@ export default function ChemSimLabPage() {
 			// If dragging pipe/elbow, also look for tvalves
 			const isTValveDragged = draggedItem.type === 'tvalve';
 			const targetTypes = isTValveDragged ? ['pipe', 'elbow'] : ['tvalve'];
-			
-			const potentialTargets = labItems.filter(item => 
+
+			const potentialTargets = labItems.filter(item =>
 				targetTypes.includes(item.type as string) && !group.has(item.id)
 			);
 
@@ -1298,7 +1349,7 @@ export default function ChemSimLabPage() {
 						// Check capacity: tvalve max 3, pipe/elbow max 2
 						const tvalveMaxConns = 3;
 						const otherMaxConns = 2;
-						
+
 						const tvalveConns = snappedConnections.get(tvalveItem.id);
 						const otherConns = snappedConnections.get(otherItem.id);
 
@@ -1325,7 +1376,7 @@ export default function ChemSimLabPage() {
 						// Calculate snap position
 						const offsetKey = otherItem.type === 'pipe' ? 'pipeOffsetX' : 'elbowOffsetX';
 						const offsetKeyY = otherItem.type === 'pipe' ? 'pipeOffsetY' : 'elbowOffsetY';
-						
+
 						const snapX = (otherItem.type === 'pipe' ? otherItem.position.x + (snapConfig as any).pipeOffsetX : otherItem.position.x + (snapConfig as any).elbowOffsetX);
 						const snapY = (otherItem.type === 'pipe' ? otherItem.position.y + (snapConfig as any).pipeOffsetY : otherItem.position.y + (snapConfig as any).elbowOffsetY);
 
@@ -1378,14 +1429,14 @@ export default function ChemSimLabPage() {
 		checkForHeating(draggedItem, info);
 	};
 
-  const trackStep = (id: string) => {
-    if (!stepsTaken.find((s) => s.id === id)) {
-      setStepsTaken((prev) => [...prev, sampleExperiment.steps.find(step => step.id === id)!]);
-      if (currentStepIndex < sampleExperiment.steps.length - 1) {
-        setCurrentStepIndex(currentStepIndex + 1);
-      }
-    }
-  };
+	const trackStep = (id: string) => {
+		if (!stepsTaken.find((s) => s.id === id)) {
+			setStepsTaken((prev) => [...prev, sampleExperiment.steps.find(step => step.id === id)!]);
+			if (currentStepIndex < sampleExperiment.steps.length - 1) {
+				setCurrentStepIndex(currentStepIndex + 1);
+			}
+		}
+	};
 
 	const checkForPour = (draggedItem: LabItem, info: PanInfo) => {
 		if (!draggedItem.contents || draggedItem.contents.volume === 0) return;
@@ -1590,12 +1641,27 @@ export default function ChemSimLabPage() {
 		}, 30);
 	};
 
+	const handleColor = (id : string) => {
+		setLabItems((prev) =>
+			prev.map((item) => {
+				if (item.id === id && item.contents) {
+					return {
+						...item,
+						contents: { ...item.contents, color: "skyblue" }
+					};
+				}
+				return item;
+			})
+		);
+	};
+
 	return (
 		<div className="flex flex-col h-screen bg-background text-foreground font-body">
 			<Header onSave={() => console.log(JSON.stringify(labItems))} onReset={handleReset} />
 			<main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 overflow-hidden">
 				<div className="lg:col-span-3 xl:col-span-2">
 					<ExperimentPanel
+						enableSOP={enableSOP}
 						experiment={sampleExperiment}
 						currentStepIndex={currentStepIndex}
 						items={labItems}
@@ -1605,6 +1671,7 @@ export default function ChemSimLabPage() {
 						onGetGuidance={handleGetGuidance}
 						onAnalyzeCompletion={handleAnalyzeCompletion}
 						onDropReagent={handleDropReagent}
+						handleColor={handleColor}
 						aiGuidance={aiGuidance}
 						isLoading={isLoading}
 					/>
