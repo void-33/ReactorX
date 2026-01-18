@@ -18,7 +18,8 @@ const equipmentList: { type: EquipmentType, name: string, icon: React.ReactNode 
   {type: 'pipe', name:'Pipe', icon: <Droplet/>},
   {type:'elbow', name:'Elbow', icon:<Droplet/>},
   {type:'meter', name:'Meter', icon:<Droplet/>},
-  {type:'tvalve', name:'Tvalve', icon:<Droplet/>}
+  {type:'tvalve', name:'Tvalve', icon:<Droplet/>},
+  {type:'compressor',name:'Compressor', icon:<Droplet/>}
 ];
 
 export default function EquipmentPanel({ onAddItem }: EquipmentPanelProps) {
