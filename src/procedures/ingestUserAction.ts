@@ -48,6 +48,7 @@ export function ingestUserAction(
       switch (step.task) {
         case "create":
           return (step as any).labitem === action.labitem;
+        case "fill": return (step as any).itemId === action.itemId && (step as any).reagent === action.reagent;
         case "connect":
           return (
             (step as any).params?.from === action.source &&

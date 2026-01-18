@@ -2,13 +2,21 @@ import { Step } from "@/lib/types";
 
 export const ammoniaProcedure: Step[] = [
   // Assembly of equipment
-  { id: 1, task: 'create', execution: 'instant', labitem: 'storagetank', params: { subtype: 'N2_tank', name: 'N2' }, pre: [] },
-  { id: 2, task: 'create', execution: 'instant', labitem: 'storagetank', params: { subtype: 'H2_tank', name: 'H2' }, pre: [] },
-  { id: 3, task: 'create', execution: 'instant', labitem: 'compressor', params: { name: 'Compressor1' }, pre: [] },
-  { id: 4, task: 'create', execution: 'instant', labitem: 'reactor', params: { name: 'Reactor1' }, pre: [] },
-  { id: 5, task: 'create', execution: 'instant', labitem: 'condenser', params: { name: 'Condenser1' }, pre: [] },
-  { id: 6, task: 'create', execution: 'instant', labitem: 'valve', params: { name: 'V_feed' }, pre: [] },
-  { id: 7, task: 'create', execution: 'instant', labitem: 'valve', params: { name: 'V_recycle' }, pre: [] },
+  { id: 1, task: 'create', execution: 'instant', labitem: 'storagetank', name: "N2_tank", pre: [] },
+  { id: 2, task: 'create', execution: 'instant', labitem: 'storagetank', name: 'H2_tank', pre: [] },
+  { id: 3, task: 'create', execution: 'instant', labitem: 'elbow', name: "N2_elbow", pre: [] },
+  { id: 4, task: 'create', execution: 'instant', labitem: 'elbow', name: 'H2_elbow', pre: [] },
+  { id: 5, task: 'create', execution: 'instant', labitem: 'pipe', name: "N2_pipe", pre: [] },
+  { id: 6, task: 'create', execution: 'instant', labitem: 'pipe', name: 'H2_pipe', pre: [] },
+  { id: 7, task: 'create', execution: 'instant', labitem: 'tvalve', name: 'tvalve', pre: [] },
+	{ id: 8, task: 'create', execution: 'instant', labitem: 'pipe', name: "comp_pipe", pre: [] },
+  { id: 9, task: 'create', execution: 'instant', labitem: 'pipe', name: "reactor_pipe", pre: [] },
+
+  { id: 10, task: "fill", execution: "instant", itemId: "N2_tank", progressId: "1", reagent: "nitrogen", volume: 20, errorMessage: {type: "emit_message",message: "Fill the beaker with Nitrogen gas"},pre: [1]},
+  { id: 11, task: "fill", execution: "instant", itemId: "H2_tank", progressId: "2", reagent: "hydrogen", volume: 20, errorMessage: {type: "emit_message",message: "Fill the beaker with Hydrogen gas"},pre: [2]},
+
+  { id: 12, task: 'create', execution: 'instant', labitem: 'compressor', name: 'Compressor', pre: [] },
+  { id: 13, task: 'create', execution: 'instant', labitem: 'reactor', name: 'Reactor', pre: [] },
 
   // Connections
   { id: 8, task: 'connect', execution: 'instant', params: { from: 'N2', to: 'Compressor1', via: 'V_feed' }, pre: [1,3,6], 

@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, PanInfo, useMotionValue, MotionValue, motionValue } from 'framer-motion';
 import { sampleExperiment } from '@/lib/experiments';
-import type { LabItem, EquipmentType, Reagent, ExperimentStep, Drop, IngestResult, UserAction } from '@/lib/types';
+import type { LabItem, EquipmentType, Reagent, ExperimentStep, Drop, IngestResult, UserAction, CreateStep } from '@/lib/types';
 import Header from '@/components/lab/Header';
 import Workbench from '@/components/lab/Workbench';
 import EquipmentPanel from '@/components/lab/EquipmentPanel';
@@ -18,6 +18,7 @@ import { initializeCompletionState } from '@/procedures/initializeCompletionStat
 import { triggerCompletionEvents } from '@/procedures/triggerCompletionEvents';
 import { useProcedure } from '@/context/ProcedureContext';
 import { ingestUserAction } from '@/procedures/ingestUserAction';
+import { Result } from 'postcss';
 
 // Elbow snapping configuration - adjust these for fine-tuning
 // === STORAGE TANK SNAPPING CONFIGS ===
@@ -212,6 +213,7 @@ export default function ChemSimLabPage() {
 	}, [lastInteractionToast, toast]);
 
 	const addLabItem = (type: EquipmentType) => {
+		let result : IngestResult;
 		if (guided) {
 			const action: UserAction = {
 				task: "create",
@@ -219,7 +221,7 @@ export default function ChemSimLabPage() {
 				labitem: type,
 			};
 
-			const result: IngestResult = ingestUserAction(
+			result =  ingestUserAction(
 				action,
 				procedure.steps,
 				completionState,
@@ -236,16 +238,17 @@ export default function ChemSimLabPage() {
 			}
 		}
 
+		const matchedStep : any = result!.matchedStep;
 		const newItem: LabItem = {
-			id: `${type}-${Date.now()}`,
+			id: (result!.matchedStep) ? (matchedStep.name) : `${type}-${Date.now()}`,
 			type,
 			position: { x: 200, y: 200 },
 			chemicals: [],
 			isDraggingEnabled: true,
 			isSelected: false,
-			...(type === 'beaker' || type === 'flask' || type === 'burette' ? { contents: { reagent: null, volume: 0, color: 'transparent', concentration: 0.1 } } : {}),
+			...(type === 'beaker' || type === 'flask' || type === 'burette' || type === "storagetank" ? { contents: { reagent: null, volume: 0, color: 'transparent', concentration: 0.1 } } : {}),
 			...(type === 'burner' ? { isHeating: false } : {}),
-			...(type === 'pipe' || type === 'elbow' || type === 'tvalve' ? { rotation: 0 } : {}),
+			...(type === 'pipe' || type === 'elbow' || type === 'tvalve' ? { rotation: 0, contents: { reagent: null, volume: 0, color: 'transparent', concentration: 0.1 } } : {}),
 		};
 		setLabItems((prev) => [...prev, newItem]);
 	};
@@ -309,7 +312,7 @@ export default function ChemSimLabPage() {
 			const action: UserAction = {
 				task: "fill", // task type for adding reagent
 				execution: "instant", // or "repeatable" if you want to handle pouring gradually
-				labitem: item.type, // use lab item type for matching
+				itemId: item.id, // use lab item type for matching
 				reagent: reagent.id,
 				volume,
 				concentration,
@@ -324,6 +327,7 @@ export default function ChemSimLabPage() {
 				ui,
 			);
 
+			console.log(result);
 			// 3️⃣ If invalid according to procedure, stop
 			if (!result.valid) return;
 
