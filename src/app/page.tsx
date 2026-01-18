@@ -45,7 +45,7 @@ const ELBOW_PIPE_SNAP_CONFIGS = {
     0: { pipeOffsetX: -5, pipeOffsetY: -140, microAdjustX: 0, microAdjustY: 0 },     // Pipe rotation 0
     90: { pipeOffsetX: -215, pipeOffsetY: 70, microAdjustX: 0, microAdjustY: 0 },    // Pipe rotation 90
     180: { pipeOffsetX: -5, pipeOffsetY: -140, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 180
-    270: { pipeOffsetX: -50, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 270
+    270: { pipeOffsetX: -220, pipeOffsetY: 70, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 270
   },
   90: { // Elbow rotation 90 (outlets: bottom, left)
     0: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },     // Pipe rotation 0
