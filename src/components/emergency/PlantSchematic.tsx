@@ -199,7 +199,7 @@ export default function PlantSchematic({
           {/* Crack lines */}
           <line x1="150" y1="352" x2="145" y2="345" stroke="#fca5a5" strokeWidth="1.5" opacity="0.7" />
           <line x1="150" y1="352" x2="155" y2="345" stroke="#fca5a5" strokeWidth="1.5" opacity="0.7" />
-          
+
           {/* Animated gas plume */}
           {gasIntensity > 0 && (
             <>

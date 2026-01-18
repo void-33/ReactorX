@@ -46,7 +46,7 @@ export default function ControlPanel({
         <div className="mb-4 pb-4 border-b border-blue-500/20">
           <p className="text-xs font-semibold text-gray-400 mb-2">🚰 Valves</p>
           <div className="space-y-2">
-            {['valve-1', 'valve-2'].map((valveId) => (
+            {['valve-1'].map((valveId) => (
               <motion.button
                 key={valveId}
                 onClick={() => !disabled && onToggleValve(valveId)}
