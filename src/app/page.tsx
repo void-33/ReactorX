@@ -12,6 +12,61 @@ import { getGuidance, analyzeCompletion } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import AnalysisDialog from '@/components/lab/AnalysisDialog';
 
+// Elbow snapping configuration - adjust these for fine-tuning
+// === STORAGE TANK SNAPPING CONFIGS ===
+// Configuration for rotation = 0 (outlets at bottom and right)
+const ELBOW_TANK_SNAP_CONFIG_ROTATION_0 = {
+  snapDistance: 80, // Distance threshold for snapping (in pixels)
+  storageTopOffsetX: 130, // Horizontal offset from StorageTank left edge to center top
+  storageTopOffsetY: -80, // Vertical offset from StorageTank top edge (negative = above)
+  // Micro-adjustment offsets - change these to fine-tune the elbow position
+  microAdjustX: 60, // Additional horizontal adjustment
+  microAdjustY: -10, // Additional vertical adjustment
+};
+
+// Configuration for rotation = 90 (outlets at bottom and left)
+const ELBOW_TANK_SNAP_CONFIG_ROTATION_90 = {
+  snapDistance: 150, // Distance threshold for snapping (in pixels)
+  storageTopOffsetX: 130, // Horizontal offset from StorageTank left edge to center top
+  storageTopOffsetY: -80, // Vertical offset from StorageTank top edge (negative = above)
+  // Micro-adjustment offsets - change these to fine-tune the elbow position
+  microAdjustX: -38, // Additional horizontal adjustment
+  microAdjustY: 0, // Additional vertical adjustment
+};
+
+// === PIPE SNAPPING CONFIGS ===
+// Bounding box dimensions for collision detection
+const ELBOW_BBOX = { width: 120, height: 120 }; // Elbow bounding box size
+const PIPE_BBOX = { width: 200, height: 200 };   // Pipe bounding box size
+
+// Nested config for all 16 combinations: [elbowRotation][pipeRotation]
+const ELBOW_PIPE_SNAP_CONFIGS = {
+  0: { // Elbow rotation 0 (outlets: bottom, right)
+    0: { pipeOffsetX: -5, pipeOffsetY: -140, microAdjustX: 0, microAdjustY: 0 },     // Pipe rotation 0
+    90: { pipeOffsetX: -215, pipeOffsetY: 70, microAdjustX: 0, microAdjustY: 0 },    // Pipe rotation 90
+    180: { pipeOffsetX: -5, pipeOffsetY: -140, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 180
+    270: { pipeOffsetX: -50, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 270
+  },
+  90: { // Elbow rotation 90 (outlets: bottom, left)
+    0: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },     // Pipe rotation 0
+    90: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },    // Pipe rotation 90
+    180: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 180
+    270: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 270
+  },
+  180: { // Elbow rotation 180 (outlets: top, left)
+    0: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },     // Pipe rotation 0
+    90: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },    // Pipe rotation 90
+    180: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 180
+    270: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 270
+  },
+  270: { // Elbow rotation 270 (outlets: top, right)
+    0: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },     // Pipe rotation 0
+    90: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },    // Pipe rotation 90
+    180: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 180
+    270: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 270
+  },
+};
+
 export default function ChemSimLabPage() {
   const [labItems, setLabItems] = useState<LabItem[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -22,6 +77,8 @@ export default function ChemSimLabPage() {
   const [lastInteractionToast, setLastInteractionToast] = useState<{title: string, description: string, variant?: "default" | "destructive" } | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [drops, setDrops] = useState<Drop[]>([]);
+  // Track snapped connections: key is item ID, value is connected item ID
+  const [snappedConnections, setSnappedConnections] = useState<Map<string, string>>(new Map());
   
   const workbenchRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
@@ -56,10 +113,31 @@ export default function ChemSimLabPage() {
     if (selectedItemId === itemId) {
       setSelectedItemId(null);
     }
+    // Clear any connections for this item
+    setSnappedConnections(prev => {
+      const newMap = new Map(prev);
+      const connectedId = newMap.get(itemId);
+      if (connectedId) {
+        newMap.delete(connectedId);
+      }
+      newMap.delete(itemId);
+      return newMap;
+    });
     setLastInteractionToast({ title: "Item Removed", description: "Equipment removed from workbench."});
   };
 
   const rotatePipe = (itemId: string) => {
+    // Clear any connections when rotating since position will change
+    setSnappedConnections(prev => {
+      const newMap = new Map(prev);
+      const connectedId = newMap.get(itemId);
+      if (connectedId) {
+        newMap.delete(connectedId);
+      }
+      newMap.delete(itemId);
+      return newMap;
+    });
+    
     setLabItems((prev) => prev.map(item => {
       if (item.id === itemId && (item.type === 'pipe' || item.type === 'elbow')) {
         return { ...item, rotation: ((item.rotation || 0) + 90) % 360 };
@@ -159,8 +237,146 @@ export default function ChemSimLabPage() {
     const draggedItem = labItems.find(item => item.id === id);
     if (!draggedItem) return;
 
+    let finalX = draggedItem.position.x + info.offset.x;
+    let finalY = draggedItem.position.y + info.offset.y;
+
+    // Check for elbow snapping to storage tank (only for rotation 0 and 90)
+    if (draggedItem.type === 'elbow' && (draggedItem.rotation === 0 || draggedItem.rotation === 90)) {
+      const storageTank = labItems.find(item => item.type === 'storagetank');
+      if (storageTank) {
+        const storageTankRef = itemRefs.current.get(storageTank.id);
+        if (storageTankRef && workbenchRef.current) {
+          const storageRect = storageTankRef.getBoundingClientRect();
+          const workbenchRect = workbenchRef.current.getBoundingClientRect();
+          
+          // Select the appropriate config based on elbow rotation
+          const ELBOW_SNAP_CONFIG = draggedItem.rotation === 90 
+            ? ELBOW_TANK_SNAP_CONFIG_ROTATION_90 
+            : ELBOW_TANK_SNAP_CONFIG_ROTATION_0;
+          
+          // Calculate storage tank's top-middle position in workbench coordinates
+          const storageTankTopX = storageTank.position.x + ELBOW_SNAP_CONFIG.storageTopOffsetX;
+          const storageTankTopY = storageTank.position.y + ELBOW_SNAP_CONFIG.storageTopOffsetY;
+          
+          // Calculate distance between elbow center and storage tank top
+          const elbowCenterX = finalX + 60; // Approximate elbow center
+          const elbowCenterY = finalY + 60;
+          const distance = Math.sqrt(
+            Math.pow(elbowCenterX - storageTankTopX, 2) + 
+            Math.pow(elbowCenterY - storageTankTopY, 2)
+          );
+          
+          // Snap if within threshold
+          if (distance < ELBOW_SNAP_CONFIG.snapDistance) {
+            finalX = storageTankTopX - 60 + ELBOW_SNAP_CONFIG.microAdjustX; // Center elbow on snap point
+            finalY = storageTankTopY - 60 + ELBOW_SNAP_CONFIG.microAdjustY;
+            setLastInteractionToast({ 
+              title: "Elbow Snapped", 
+              description: "Elbow attached to storage tank top."
+            });
+          }
+        }
+      }
+    }
+
+    // Check for elbow-to-pipe or pipe-to-elbow snapping
+    if (draggedItem.type === 'elbow' || draggedItem.type === 'pipe') {
+      const targetType = draggedItem.type === 'elbow' ? 'pipe' : 'elbow';
+      const targetItem = labItems.find(item => item.type === targetType);
+      
+      if (targetItem) {
+        const targetRef = itemRefs.current.get(targetItem.id);
+        if (targetRef && workbenchRef.current) {
+          // Get both rotations - default to 0 if not set
+          const elbowRotation = (draggedItem.type === 'elbow' ? draggedItem.rotation : targetItem.rotation) || 0;
+          const pipeRotation = (draggedItem.type === 'pipe' ? draggedItem.rotation : targetItem.rotation) || 0;
+          
+          // Get the appropriate config for this combination
+          const pipeSnapConfig = ELBOW_PIPE_SNAP_CONFIGS[elbowRotation]?.[pipeRotation] || ELBOW_PIPE_SNAP_CONFIGS[0][0];
+          
+          // Determine which item is elbow and which is pipe
+          const elbowItem = draggedItem.type === 'elbow' ? draggedItem : targetItem;
+          const pipeItem = draggedItem.type === 'pipe' ? draggedItem : targetItem;
+          
+          // Calculate current positions
+          const elbowX = draggedItem.type === 'elbow' ? finalX : elbowItem.position.x;
+          const elbowY = draggedItem.type === 'elbow' ? finalY : elbowItem.position.y;
+          const pipeX = draggedItem.type === 'pipe' ? finalX : pipeItem.position.x;
+          const pipeY = draggedItem.type === 'pipe' ? finalY : pipeItem.position.y;
+          
+          // Create bounding boxes for collision detection
+          const elbowRect = {
+            x: elbowX,
+            y: elbowY,
+            width: ELBOW_BBOX.width,
+            height: ELBOW_BBOX.height
+          };
+          
+          const pipeRect = {
+            x: pipeX,
+            y: pipeY,
+            width: PIPE_BBOX.width,
+            height: PIPE_BBOX.height
+          };
+          
+          // Check if rectangles overlap (AABB collision detection)
+          const isOverlapping = (
+            elbowRect.x < pipeRect.x + pipeRect.width &&
+            elbowRect.x + elbowRect.width > pipeRect.x &&
+            elbowRect.y < pipeRect.y + pipeRect.height &&
+            elbowRect.y + elbowRect.height > pipeRect.y
+          );
+          
+          const wasConnected = snappedConnections.has(draggedItem.id) && snappedConnections.get(draggedItem.id) === targetItem.id;
+          
+          // Snap if rectangles are overlapping
+          if (isOverlapping) {
+            // Calculate pipe snap position
+            const pipeSnapX = pipeItem.position.x + pipeSnapConfig.pipeOffsetX;
+            const pipeSnapY = pipeItem.position.y + pipeSnapConfig.pipeOffsetY;
+            if (draggedItem.type === 'elbow') {
+              finalX = pipeSnapX + pipeSnapConfig.microAdjustX;
+              finalY = pipeSnapY + pipeSnapConfig.microAdjustY;
+            } else {
+              // If dragging pipe, snap to elbow
+              finalX = elbowItem.position.x - pipeSnapConfig.pipeOffsetX + pipeSnapConfig.microAdjustX;
+              finalY = elbowItem.position.y - pipeSnapConfig.pipeOffsetY + pipeSnapConfig.microAdjustY;
+            }
+            
+            // Only show toast if newly connected (not already snapped)
+            if (!wasConnected) {
+              setSnappedConnections(prev => {
+                const newMap = new Map(prev);
+                newMap.set(draggedItem.id, targetItem.id);
+                newMap.set(targetItem.id, draggedItem.id);
+                return newMap;
+              });
+              setLastInteractionToast({ 
+                title: "Pipe Connected", 
+                description: `Elbow(${elbowRotation}°) + Pipe(${pipeRotation}°) connected.`
+              });
+            }
+          } else {
+            // Unsnap if moved beyond threshold
+            if (wasConnected) {
+              setSnappedConnections(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(draggedItem.id);
+                newMap.delete(targetItem.id);
+                return newMap;
+              });
+              setLastInteractionToast({ 
+                title: "Pipe Disconnected", 
+                description: "Items unsnapped."
+              });
+            }
+          }
+        }
+      }
+    }
+
     // Update position
-    updateItemPosition(id, draggedItem.position.x + info.offset.x, draggedItem.position.y + info.offset.y);
+    updateItemPosition(id, finalX, finalY);
 
     // Check for interactions
     checkForPour(draggedItem, info);
