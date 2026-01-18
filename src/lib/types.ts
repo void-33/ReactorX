@@ -17,7 +17,7 @@ export type LiquidContents = {
 	concentration: number;
 };
 
-export type EquipmentType = 'elbow'|'beaker' | 'flask' | 'burner' | 'burette'| 'storagetank'|'pipe'
+export type EquipmentType = 'meter'|'elbow'|'beaker' | 'flask' | 'burner' | 'burette'| 'storagetank'|'pipe'
   | "reactor"
   | "compressor"
   | "condenser"
