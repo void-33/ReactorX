@@ -15,7 +15,7 @@ export default function Header({ onSave, onReset }: HeaderProps) {
         <div className="p-2 bg-primary/10 text-primary rounded-lg">
           <FlaskConical className="h-6 w-6" />
         </div>
-        <h1 className="text-xl font-bold text-foreground font-headline">ChemSimLab</h1>
+        <h1 className="text-xl font-bold text-foreground font-headline">ReactorX</h1>
       </div>
       <div className="flex items-center gap-2">
         <Button variant="outline" onClick={onSave}><Save className="mr-2" /> Save</Button>

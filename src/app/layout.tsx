@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ProcedureProvider } from '@/context/ProcedureContext';
 
 export const metadata: Metadata = {
-  title: 'ChemSimLab',
+  title: 'ReactorX',
   description: 'A modern interactive chemistry lab simulation.',
 };
 
