@@ -15,7 +15,7 @@ export default function Meter() {
                     <path d="m73.96 33.025-1.0571 1.1155" style={{ 'paintOrder': 'markers' }} />
                     <path d="m75.083 34.621-1.4185 0.59148" style={{ 'paintOrder': 'markers' }} />
                     <path d="m75.524 36.217-1.4862 0.39111" style={{ 'paintOrder': 'markers' }} />
-                    <g transform="matrix(.63058 0 0 .8943 25.96 3.7308) rotate(-90 70.191 37.267)">
+                    <g transform="matrix(.63058 0 0 .8943 25.96 3.7308) rotate(90 70.191 37.267)">
                         <path d="m70.191 35.04v4.4526" style={{ 'paintOrder': 'markers' }} />
                         <path d="m70.163 35.206-1.2445 2.0465" style={{ 'paintOrder': 'markers' }} />
                         <path d="m70.163 35.178 1.2445 2.0465" style={{ 'paintOrder': 'markers' }} />
