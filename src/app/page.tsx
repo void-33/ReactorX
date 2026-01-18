@@ -375,6 +375,161 @@ export default function ChemSimLabPage() {
       }
     }
 
+		// ✅ Pipe-to-pipe snapping (straight run):
+		// Only snap when both pipes are collinear: same rotation or exact opposite
+		// i.e. rotation modulo 180 matches (0/180 vertical, 90/270 horizontal).
+		if (draggedItem.type === 'pipe') {
+			const normRot = (r: number) => ((r % 360) + 360) % 360;
+			const draggedRot = normRot(draggedItem.rotation ?? 0);
+
+			const isCollinearStraight = (a: number, b: number) => (a % 180) === (b % 180);
+			const isVertical = (r: number) => (r % 180) === 0;
+
+			const PIPE_SNAP_DISTANCE = 80; // tweak if needed
+
+			// Helper: remove an existing snap pair (both directions)
+			const disconnectPair = (aId: string, bId: string) => {
+				setSnappedConnections(prev => {
+					const next = new Map(prev);
+					next.delete(aId);
+					next.delete(bId);
+					return next;
+				});
+			};
+
+			// Helper: connect a new snap pair (both directions), replacing any existing pair for `aId`
+			const connectPairReplacing = (aId: string, bId: string) => {
+				setSnappedConnections(prev => {
+					const next = new Map(prev);
+
+					// If `aId` was connected to something else, remove both directions first
+					const old = next.get(aId);
+					if (old && old !== bId) {
+						next.delete(old);
+						next.delete(aId);
+					}
+
+					// If `bId` was connected to something else, remove both directions first
+					const oldB = next.get(bId);
+					if (oldB && oldB !== aId) {
+						next.delete(oldB);
+						next.delete(bId);
+					}
+
+					next.set(aId, bId);
+					next.set(bId, aId);
+					return next;
+				});
+			};
+
+			type SnapCandidate = {
+				targetId: string;
+				snapX: number;
+				snapY: number;
+				score: number;
+			};
+
+			let best: SnapCandidate | null = null;
+
+			const otherPipes = labItems.filter(i => i.type === 'pipe' && i.id !== draggedItem.id);
+
+			for (const target of otherPipes) {
+				const targetRot = normRot(target.rotation ?? 0);
+
+				// Only straight/collinear snapping
+				if (!isCollinearStraight(draggedRot, targetRot)) continue;
+
+				// Don't try to snap onto a pipe already connected to someone else (unless it's us)
+				const targetConnected = snappedConnections.get(target.id);
+				if (targetConnected && targetConnected !== draggedItem.id) continue;
+
+				if (isVertical(draggedRot)) {
+					// Two options: dragged top -> target bottom OR dragged bottom -> target top
+					const option1 = {
+						snapX: target.position.x,                      // align X
+						snapY: target.position.y + PIPE_BBOX.height,   // place dragged below target
+					};
+					const option2 = {
+						snapX: target.position.x,                      // align X
+						snapY: target.position.y - PIPE_BBOX.height,   // place dragged above target
+					};
+
+					// Score using endpoint distance + lateral misalignment
+					const score1 = Math.hypot(
+						(finalX - option1.snapX),
+						(finalY - option1.snapY)
+					);
+					const score2 = Math.hypot(
+						(finalX - option2.snapX),
+						(finalY - option2.snapY)
+					);
+
+					const chosen = score1 <= score2
+						? { ...option1, score: score1 }
+						: { ...option2, score: score2 };
+
+					if (chosen.score < PIPE_SNAP_DISTANCE && (!best || chosen.score < best.score)) {
+						best = { targetId: target.id, snapX: chosen.snapX, snapY: chosen.snapY, score: chosen.score };
+					}
+				} else {
+					// Horizontal (90/270): left<->right end-to-end
+					const option1 = {
+						snapX: target.position.x + PIPE_BBOX.width,    // place dragged to the right of target
+						snapY: target.position.y,                      // align Y
+					};
+					const option2 = {
+						snapX: target.position.x - PIPE_BBOX.width,    // place dragged to the left of target
+						snapY: target.position.y,                      // align Y
+					};
+
+					const score1 = Math.hypot(
+						(finalX - option1.snapX),
+						(finalY - option1.snapY)
+					);
+					const score2 = Math.hypot(
+						(finalX - option2.snapX),
+						(finalY - option2.snapY)
+					);
+
+					const chosen = score1 <= score2
+						? { ...option1, score: score1 }
+						: { ...option2, score: score2 };
+
+					if (chosen.score < PIPE_SNAP_DISTANCE && (!best || chosen.score < best.score)) {
+						best = { targetId: target.id, snapX: chosen.snapX, snapY: chosen.snapY, score: chosen.score };
+					}
+				}
+			}
+
+			const currentlyConnectedId = snappedConnections.get(draggedItem.id);
+
+			if (best) {
+				// Apply snap position
+				finalX = best.snapX;
+				finalY = best.snapY;
+
+				const wasConnectedToThis = currentlyConnectedId === best.targetId;
+				if (!wasConnectedToThis) {
+					connectPairReplacing(draggedItem.id, best.targetId);
+					setLastInteractionToast({
+						title: "Pipes Connected",
+						description: `Pipe(${draggedRot}°) snapped to Pipe(${normRot(labItems.find(i => i.id === best!.targetId)?.rotation ?? 0)}°).`,
+					});
+				}
+			} else {
+				// If we were connected to a pipe, disconnect when moved away
+				if (currentlyConnectedId) {
+					const connectedItem = labItems.find(i => i.id === currentlyConnectedId);
+					if (connectedItem?.type === 'pipe') {
+						disconnectPair(draggedItem.id, currentlyConnectedId);
+						setLastInteractionToast({
+							title: "Pipes Disconnected",
+							description: "Pipes unsnapped.",
+						});
+					}
+				}
+			}
+		}
     // Update position
     updateItemPosition(id, finalX, finalY);
 
