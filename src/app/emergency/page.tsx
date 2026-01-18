@@ -17,7 +17,7 @@ export default function EmergencyResponseSimulation() {
   const [gasConcentration, setGasConcentration] = useState(0);
   const [leakRadius, setLeakRadius] = useState(0);
   const [spraySystemActive, setSpraySystemActive] = useState(false);
-  const [valvesOpen, setValvesOpen] = useState<Set<string>>(new Set());
+  const [valvesOpen, setValvesOpen] = useState<Set<string>>(new Set(['valve-1']));
   const [pumpsRunning, setPumpsRunning] = useState<Set<string>>(new Set());
   const [currentPPE, setCurrentPPE] = useState<PPEType>('none');
   const [ppeModalOpen, setPpeModalOpen] = useState(false);
