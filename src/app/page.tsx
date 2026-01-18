@@ -45,6 +45,64 @@ const ELBOW_TANK_SNAP_CONFIG_ROTATION_90 = {
 // Bounding box dimensions for collision detection
 const ELBOW_BBOX = { width: 120, height: 120 }; // Elbow bounding box size
 const PIPE_BBOX = { width: 200, height: 200 };   // Pipe bounding box size
+const TVALVE_BBOX = { width: 150, height: 150 }; // T-valve bounding box size
+
+// === T-VALVE TO PIPE SNAPPING CONFIGS ===
+// T-valve rotation 0 (outlets: left, right, top-middle)
+const TVALVE_PIPE_SNAP_CONFIGS = {
+	0: { // T-valve rotation 0 (outlets: left, right, top-middle)
+		0: { pipeOffsetX: -82, pipeOffsetY: 220, microAdjustX: 0, microAdjustY: 0 },     // Pipe rotation 0 (top outlet)
+		90: { pipeOffsetX: 120, pipeOffsetY: 5, microAdjustX: 0, microAdjustY: 0 },    // Pipe rotation 90 (left/right outlet)
+		180: { pipeOffsetX: 250, pipeOffsetY: 5, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 180 (top outlet)
+		270: { pipeOffsetX: -290, pipeOffsetY: 5, microAdjustX: 0, microAdjustY: 0 },   // Pipe rotation 270 (left/right outlet)
+	},
+	90: { // T-valve rotation 90 (outlets: top, bottom, right-middle)
+		0: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		90: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		180: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		270: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+	},
+	180: { // T-valve rotation 180 (outlets: left, right, bottom-middle)
+		0: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		90: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		180: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		270: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+	},
+	270: { // T-valve rotation 270 (outlets: top, bottom, left-middle)
+		0: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		90: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		180: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		270: { pipeOffsetX: 0, pipeOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+	},
+};
+
+// === T-VALVE TO ELBOW SNAPPING CONFIGS ===
+const TVALVE_ELBOW_SNAP_CONFIGS = {
+	0: { // T-valve rotation 0
+		0: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		90: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		180: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		270: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+	},
+	90: { // T-valve rotation 90
+		0: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		90: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		180: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		270: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+	},
+	180: { // T-valve rotation 180
+		0: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		90: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		180: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		270: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+	},
+	270: { // T-valve rotation 270
+		0: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		90: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		180: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+		270: { elbowOffsetX: 0, elbowOffsetY: 0, microAdjustX: 0, microAdjustY: 0 },
+	},
+};
 
 // Nested config for all 16 combinations: [elbowRotation][pipeRotation]
 const ELBOW_PIPE_SNAP_CONFIGS = {
@@ -187,7 +245,7 @@ export default function ChemSimLabPage() {
 			isSelected: false,
 			...(type === 'beaker' || type === 'flask' || type === 'burette' ? { contents: { reagent: null, volume: 0, color: 'transparent', concentration: 0.1 } } : {}),
 			...(type === 'burner' ? { isHeating: false } : {}),
-			...(type === 'pipe' || type === 'elbow' ? { rotation: 0 } : {}),
+			...(type === 'pipe' || type === 'elbow' || type === 'tvalve' ? { rotation: 0 } : {}),
 		};
 		setLabItems((prev) => [...prev, newItem]);
 	};
@@ -235,7 +293,7 @@ export default function ChemSimLabPage() {
 		});
 
 		setLabItems((prev) => prev.map(item => {
-			if (item.id === itemId && (item.type === 'pipe' || item.type === 'elbow')) {
+			if (item.id === itemId && (item.type === 'pipe' || item.type === 'elbow' || item.type === 'tvalve')) {
 				return { ...item, rotation: ((item.rotation || 0) + 90) % 360 };
 			}
 			return item;
@@ -786,6 +844,138 @@ export default function ChemSimLabPage() {
 				}
 			}
 		}
+
+		// === T-VALVE SNAPPING ===
+		// T-valve can connect to pipes or elbows. Max 3 connections (3 outlets). Same rotation items cannot connect to same outlet.
+		if (draggedItem.type === 'tvalve' || draggedItem.type === 'pipe' || draggedItem.type === 'elbow') {
+			// If dragging tvalve, look for pipes and elbows
+			// If dragging pipe/elbow, also look for tvalves
+			const isTValveDragged = draggedItem.type === 'tvalve';
+			const targetTypes = isTValveDragged ? ['pipe', 'elbow'] : ['tvalve'];
+			
+			const potentialTargets = labItems.filter(item => 
+				targetTypes.includes(item.type as string) && !group.has(item.id)
+			);
+
+			for (const targetItem of potentialTargets) {
+				const targetRef = itemRefs.current.get(targetItem.id);
+				if (targetRef && workbenchRef.current) {
+					const draggedConns = snappedConnections.get(draggedItem.id);
+					const targetConns = snappedConnections.get(targetItem.id);
+					const wasConnected = draggedConns?.has(targetItem.id);
+
+					// Determine which is tvalve and which is pipe/elbow
+					const tvalveItem = isTValveDragged ? draggedItem : targetItem;
+					const otherItem = isTValveDragged ? targetItem : draggedItem;
+					const tvalveRotation = tvalveItem.rotation || 0;
+					const otherRotation = otherItem.rotation || 0;
+
+					// Get config based on type
+					let snapConfig;
+					if (otherItem.type === 'pipe') {
+						snapConfig = TVALVE_PIPE_SNAP_CONFIGS[tvalveRotation as keyof typeof TVALVE_PIPE_SNAP_CONFIGS]?.[otherRotation as keyof typeof TVALVE_PIPE_SNAP_CONFIGS[0]] || TVALVE_PIPE_SNAP_CONFIGS[0][0];
+					} else {
+						snapConfig = TVALVE_ELBOW_SNAP_CONFIGS[tvalveRotation as keyof typeof TVALVE_ELBOW_SNAP_CONFIGS]?.[otherRotation as keyof typeof TVALVE_ELBOW_SNAP_CONFIGS[0]] || TVALVE_ELBOW_SNAP_CONFIGS[0][0];
+					}
+
+					// Calculate positions
+					const tvalveX = isTValveDragged ? finalX : tvalveItem.position.x;
+					const tvalveY = isTValveDragged ? finalY : tvalveItem.position.y;
+					const otherX = isTValveDragged ? otherItem.position.x : finalX;
+					const otherY = isTValveDragged ? otherItem.position.y : finalY;
+
+					// Create bounding boxes
+					const tvalveRect = {
+						x: tvalveX,
+						y: tvalveY,
+						width: TVALVE_BBOX.width,
+						height: TVALVE_BBOX.height
+					};
+
+					const otherBBox = otherItem.type === 'pipe' ? PIPE_BBOX : ELBOW_BBOX;
+					const otherRect = {
+						x: otherX,
+						y: otherY,
+						width: otherBBox.width,
+						height: otherBBox.height
+					};
+
+					// Check overlap
+					const isOverlapping = (
+						tvalveRect.x < otherRect.x + otherRect.width &&
+						tvalveRect.x + tvalveRect.width > otherRect.x &&
+						tvalveRect.y < otherRect.y + otherRect.height &&
+						tvalveRect.y + tvalveRect.height > otherRect.y
+					);
+
+					if (isOverlapping) {
+						// Check capacity: tvalve max 3, pipe/elbow max 2
+						const tvalveMaxConns = 3;
+						const otherMaxConns = 2;
+						
+						const tvalveConns = snappedConnections.get(tvalveItem.id);
+						const otherConns = snappedConnections.get(otherItem.id);
+
+						if (!wasConnected && tvalveConns && tvalveConns.size >= tvalveMaxConns) continue;
+						if (!wasConnected && otherConns && otherConns.size >= otherMaxConns) continue;
+
+						// Check if same rotation slot is occupied on tvalve
+						// For T-valve: 3 distinct outlets, so check exact rotation (not modulo)
+						let slotTaken = false;
+						if (tvalveConns && !wasConnected) {
+							for (const connId of Array.from(tvalveConns)) {
+								const connectedItem = labItems.find(i => i.id === connId);
+								if (connectedItem && connectedItem.type === otherItem.type) {
+									// For T-valve, use exact rotation match (not modulo) to allow 3 connections
+									if ((connectedItem.rotation || 0) === otherRotation) {
+										slotTaken = true;
+										break;
+									}
+								}
+							}
+						}
+						if (slotTaken) continue;
+
+						// Calculate snap position
+						const offsetKey = otherItem.type === 'pipe' ? 'pipeOffsetX' : 'elbowOffsetX';
+						const offsetKeyY = otherItem.type === 'pipe' ? 'pipeOffsetY' : 'elbowOffsetY';
+						
+						const snapX = (otherItem.type === 'pipe' ? otherItem.position.x + (snapConfig as any).pipeOffsetX : otherItem.position.x + (snapConfig as any).elbowOffsetX);
+						const snapY = (otherItem.type === 'pipe' ? otherItem.position.y + (snapConfig as any).pipeOffsetY : otherItem.position.y + (snapConfig as any).elbowOffsetY);
+
+						if (isTValveDragged) {
+							finalX = snapX + snapConfig.microAdjustX;
+							finalY = snapY + snapConfig.microAdjustY;
+						} else {
+							// If dragging pipe/elbow, snap to tvalve
+							const offsetVal = otherItem.type === 'pipe' ? (snapConfig as any).pipeOffsetX : (snapConfig as any).elbowOffsetX;
+							const offsetValY = otherItem.type === 'pipe' ? (snapConfig as any).pipeOffsetY : (snapConfig as any).elbowOffsetY;
+							finalX = tvalveItem.position.x - offsetVal + snapConfig.microAdjustX;
+							finalY = tvalveItem.position.y - offsetValY + snapConfig.microAdjustY;
+						}
+
+						// Connect if new
+						if (!wasConnected) {
+							connectPairAdd(draggedItem.id, targetItem.id);
+							setLastInteractionToast({
+								title: `${otherItem.type === 'pipe' ? 'Pipe' : 'Elbow'} Connected`,
+								description: `T-valve(${tvalveRotation}°) + ${otherItem.type}(${otherRotation}°) connected.`
+							});
+						}
+					} else {
+						// Unsnap if moved beyond threshold
+						if (wasConnected) {
+							disconnectPair(draggedItem.id, targetItem.id);
+							setLastInteractionToast({
+								title: "Disconnected",
+								description: "Items unsnapped."
+							});
+						}
+					}
+				}
+			}
+		}
+
 		// Update position
 		const deltaX = finalX - draggedItem.position.x;
 		const deltaY = finalY - draggedItem.position.y;

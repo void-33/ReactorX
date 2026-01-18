@@ -9,9 +9,11 @@ import Burner from './equipment/Burner';
 import Burette from './equipment/Burette';
 import Pipe from './equipment/Pipe';
 import StorageTank from './equipment/StorageTank';
+import Meter from './equipment/Mater';
 import Elbow from './equipment/Elbow';
 import Drop from './equipment/Drop';
 import { X } from 'lucide-react';
+import Tvalve from './equipment/Tvalve';
 
 interface WorkbenchProps {
 	items: LabItem[];
@@ -34,6 +36,8 @@ const equipmentMap = {
 	storagetank: StorageTank,
 	pipe: Pipe,
 	elbow: Elbow,
+	meter: Meter,
+	tvalve:Tvalve
 };
 
 const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
@@ -64,7 +68,7 @@ const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
 							animate={mvs ? undefined : { x: item.position.x, y: item.position.y }}
 							transition={{ type: 'spring', stiffness: 500, damping: 50 }}
 							className={`absolute z-10 ${item.isDraggingEnabled !== false ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
-								} ${item.isSelected && item.type !== 'pipe' && item.type !== 'elbow' ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+								} ${item.isSelected && item.type !== 'pipe' && item.type !== 'elbow' && item.type!=='tvalve' ? 'ring-2 ring-primary ring-offset-2' : ''}`}
 						// whileDrag={{ scale: item.type === 'pipe' ? 1.0 : 1.1, zIndex: 20 }}
 						>
 							{item.isSelected && (
@@ -78,7 +82,7 @@ const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
 									>
 										<X size={16} />
 									</div>
-									{(item.type === 'pipe' || item.type === 'elbow') && (
+									{(item.type === 'pipe' || item.type === 'elbow' || item.type === 'tvalve') && (
 										<div
 											className="absolute -top-2 -left-2 z-20 bg-primary text-primary-foreground rounded-full p-1 cursor-pointer"
 											onClick={(e) => {

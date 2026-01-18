@@ -1,0 +1,19 @@
+<svg width="210mm" height="297mm" version="1.1" viewBox="0 0 210 297" xmlns="http://www.w3.org/2000/svg">
+ <g transform="matrix(8.4454 0 0 8.4454 -498.93 32.972)" fill-opacity="0" stroke="#000" stroke-width=".5">
+  <rect x="62.488" y="9.589" width="2.1902" height="7.9787" style="paint-order:markers fill stroke"/>
+  <path d="m62.488 10.841-1.7991-0.0043" style="paint-order:markers fill stroke"/>
+  <path d="m62.566 16.473h-1.8773" style="paint-order:markers fill stroke"/>
+  <rect transform="rotate(89.679)" x="3.9548" y="-76.075" width="2.1902" height="7.9787" style="paint-order:markers fill stroke"/>
+  <path d="m74.845 3.536-0.0058-1.7991" style="paint-order:markers fill stroke"/>
+  <path d="m69.213 3.6457-0.010507-1.8773" style="paint-order:markers fill stroke"/>
+  <rect transform="scale(-1,1)" x="-81.562" y="9.6996" width="2.1902" height="7.9787" style="paint-order:markers fill stroke"/>
+  <path d="m81.562 10.951 1.7991-0.0043" style="paint-order:markers fill stroke"/>
+  <path d="m81.484 16.583h1.8773" style="paint-order:markers fill stroke"/>
+  <g>
+   <path d="m64.689 11 14.657-0.0486" style="paint-order:markers fill stroke"/>
+   <path d="m64.666 16.544 14.74 0.03911" style="paint-order:markers fill stroke"/>
+   <path d="m74.818 5.5213 0.0486 5.4752" style="paint-order:markers fill stroke"/>
+   <path d="m69.273 5.4984-0.03911 5.5029" style="paint-order:markers fill stroke"/>
+  </g>
+ </g>
+</svg>
