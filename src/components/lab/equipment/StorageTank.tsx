@@ -5,12 +5,11 @@ export default function StorageTank({ contents, isHeating }: LabItem) {
     const tankPathRef = useRef<SVGPathElement | null>(null);
 
     // max capacity of burette
-    const MAX_VOLUME = 10000;
+    const MAX_VOLUME = 1000;
     const [bbox, setBBox] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
     const content_volume = Math.min((contents?.volume || 0), MAX_VOLUME);
     const fillRatio = content_volume / MAX_VOLUME;
-
 
 
     const contentHeight = Math.max(0, bbox.height * fillRatio );
