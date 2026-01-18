@@ -11,6 +11,7 @@ import PipeImage from "@/assets/pipe.svg";
 import ValveImage from '@/assets/valve.svg';
 import TValveImage from "@/assets/T_valve.svg";
 import CompressorImage from "@/assets/compressor.svg";
+import ReactorImage from '@/assets/reactor.svg';
 import Image from "next/image";
 interface EquipmentPanelProps {
   onAddItem: (type: EquipmentType) => void;
@@ -104,6 +105,18 @@ const equipmentList: {
         width={24}
         height={24}
       /> },
+      {
+    type: "reactor",
+    name: "Reactor",
+    icon: (
+      <Image
+        src={ReactorImage}
+        alt="Reactor"
+        width={24}
+        height={24}
+      />
+    ),
+  },
 ];
 
 
