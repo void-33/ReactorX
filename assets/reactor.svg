@@ -1,0 +1,15 @@
+<svg width="210mm" height="297mm" version="1.1" viewBox="0 0 210 297" xmlns="http://www.w3.org/2000/svg">
+ <g transform="matrix(3.193 0 0 3.0059 -1.9109 34.439)" fill-opacity="0" stroke="#000">
+  <rect x="22.019" y="9.1945" width="20.024" height="39.572" ry="2.6656" stroke-width=".64557" style="paint-order:markers fill stroke"/>
+  <path d="m25.686 9.2563v39.386" stroke-width=".64557" style="paint-order:markers fill stroke"/>
+  <path d="m38.376 9.2563v39.386" stroke-width=".64557" style="paint-order:markers fill stroke"/>
+  <g stroke-width=".64557">
+   <path d="m27.956 9.2563v-3.7717" style="paint-order:markers fill stroke"/>
+   <path d="m35.756 9.2563v-3.7717" style="paint-order:markers fill stroke"/>
+  </g>
+  <g transform="translate(0 42.972)" stroke-width=".64557">
+   <path d="m27.956 9.2563v-3.7717" style="paint-order:markers fill stroke"/>
+   <path d="m35.756 9.2563v-3.7717" style="paint-order:markers fill stroke"/>
+  </g>
+ </g>
+</svg>
