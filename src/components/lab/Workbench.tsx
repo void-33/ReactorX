@@ -8,6 +8,7 @@ import Flask from './equipment/Flask';
 import Burner from './equipment/Burner';
 import Burette from './equipment/Burette';
 import Pipe from './equipment/Pipe';
+import Meter from './equipment/Meter';
 import StorageTank from './equipment/StorageTank';
 import Elbow from './equipment/Elbow';
 import Drop from './equipment/Drop';
@@ -32,6 +33,7 @@ const equipmentMap = {
   storagetank: StorageTank,
   pipe: Pipe,
   elbow:Elbow,
+  meter: Meter,
 };
 
 const Workbench = React.forwardRef<HTMLDivElement, WorkbenchProps>(
