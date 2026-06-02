@@ -62,7 +62,7 @@ Get the simulation running locally in under a minute:
 git clone https://github.com/void-33/TechSprint_Infinite.git
 
 # Navigate to project directory
-cd TechSprint_Infinite
+cd ReactorX
 
 # Install dependencies
 npm install
@@ -92,9 +92,9 @@ By engaging with this simulation users will:
 This project was brought to life by a dedicated team of developers and chemistry enthusiasts:
 
 - **Prashant Poudel** 
-- **Pragyan Ghimire**  
-- **Sunit Kumar Shrestha** 
+- **Pragyan Ghimire**
 - **Sakar KC** 
+- **Sunit Kumar Shrestha** 
 
 ---
 
